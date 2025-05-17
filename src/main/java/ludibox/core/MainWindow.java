@@ -46,10 +46,6 @@ public class MainWindow extends JFrame {
         menuPanel = new MenuPanel(this);
         this.add(menuPanel, "MENU");
         this.pack();
-        // GamePanel
-        currentGamePanel = new GamePanel(this);
-        this.add(currentGamePanel, "GAME");
-        this.pack();
     }
 
     // スクリーンモードの切り替え
@@ -71,8 +67,15 @@ public class MainWindow extends JFrame {
 
     // ゲームの開始
     public void startGame(MiniGame game) {
+        // 既存のGamePanelを削除
+        if (currentGamePanel != null) {
+            this.getContentPane().remove(currentGamePanel);
+        }
+        // 新しいGamePanelの作成
         currentGamePanel = GameFactory.createGame(this, game);
+        this.getContentPane().add(currentGamePanel, "GAME");
 
+        // 表示切替
         switchScreen(ScreenMode.GAME);
     }
 }
