@@ -1,7 +1,5 @@
 package ludibox.core;
 
-import ludibox.util.ImageLoader;
-
 import javax.swing.*;
 import java.awt.*;
 import java.io.Serial;
@@ -86,13 +84,14 @@ public class MenuPanel extends JPanel {
             this.setForeground(Color.WHITE);
             this.setFont(new Font("Mono", Font.BOLD, 36));
 
+            //
+            this.setFocusPainted(false);
+
             // 背景色の変更
             this.setBackground(new Color(80, 80, 80));
             this.setOpaque(true);
 
-            this.addActionListener(e -> {
-                mainWindow.startGame(game);
-            });
+            this.addActionListener(e -> mainWindow.startGame(game));
         }
     }
 }

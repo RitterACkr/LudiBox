@@ -13,18 +13,40 @@ public class Puck {
     private final double radius = 20;
 
     public Puck(double startX, double startY) {
-        this.x = startX; this.y = startY;
+        this.x = startX; this.y = startY - radius;
         this.vx = 0; this.vy = 0;
     }
 
+    public void checkCollisionMallet(Mallet mal) {
+        double dx = x - mal.getX();
+        double dy = y - mal.getY();
+        double distance = Math.sqrt(dx * dx + dy * dy);
+        double minDistance = radius + mal.getRadius();
+
+        if (distance < minDistance && distance != 0) {
+            double overlap = minDistance - distance;
+            double nx = dx / distance;
+            double ny = dy / distance;
+            x += nx * overlap;
+            y += ny * overlap;
+
+            // ベクトルの反射
+            double dot = vx * nx + vy * ny;
+            vx = vx - 2 * dot * nx;
+            vy = vy - 2 * dot * ny;
+        }
+    }
+
     // update
-    public void update() {
+    public void update(Mallet mal, int width, int height) {
         x += vx;
         y += vy;
 
+        checkCollisionMallet(mal);
+
         // 壁の反射判定
-        if (x - radius < 0 || x + radius > 800/*仮置き*/) vx = -vx;
-        if (y - radius < 0 || y + radius > 600/*仮置き*/) vy = -vy;
+        if (x - radius < 0 || x + radius > width) vx = -vx;
+        if (y - radius < 0 || y + radius > height) vy = -vy;
     }
 
     // draw
