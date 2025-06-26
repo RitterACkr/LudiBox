@@ -8,19 +8,22 @@ import java.awt.geom.Ellipse2D;
  * - AirHockey
  */
 public class Mallet {
-
-    private double x, y;
-    private final double radius = 30;
+    private double x, y;                // 現在位置
+    private double prevX, prevY;        // 前回の位置
+    private final double radius = 30;   // 半径
+    private final Color color;          // カラー
 
     /* コンストラクタ */
-    public Mallet(double x, double y) {
+    public Mallet(double x, double y, Color color) {
         // 初期位置を設定
         this.x = x; this.y = y;
+        this.prevX = x; this.prevY = y;
+        this.color = color;
     }
 
-    // 位置の設定
-    public void setPosition(double x, double y) {
-        this.x = x; this.y = y;
+    // 前回位置の更新
+    public void updatePrevPos() {
+        prevX = x; prevY = y;
     }
 
     // draw
@@ -32,7 +35,14 @@ public class Mallet {
         g2d.fill(circle);
     }
 
+    // 移動
+    public void setPos(double dx, double dy) {
+        x = dx; y = dy;
+    }
+
     public double getX() { return x; }
     public double getY() { return y; }
-    public double getRadius() { return radius; }
+    public double getRad() { return radius; }
+    public double getVelocityX() { return x - prevX; }
+    public double getVelocityY() { return y - prevY; }
 }
