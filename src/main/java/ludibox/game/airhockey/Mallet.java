@@ -21,28 +21,27 @@ public class Mallet {
         this.color = color;
     }
 
-    // 前回位置の更新
-    public void updatePrevPos() {
-        prevX = x; prevY = y;
-    }
-
     // draw
     public void draw(Graphics2D g2d) {
-        g2d.setColor(Color.RED);
+        g2d.setColor(color);
         Ellipse2D.Double circle = new Ellipse2D.Double(
-            x - radius, y - radius, radius * 2, radius * 2
+                x - radius, y - radius, radius * 2, radius * 2
         );
         g2d.fill(circle);
     }
 
     // 移動
-    public void setPos(double dx, double dy) {
+    public void setPos(double dx, double dy, Rectangle bounds) {
+        prevX = x; prevY = y;   // 前回位置の保持
         x = dx; y = dy;
+        // 範囲外に出ないように制限
+        x = Math.max(bounds.x + radius, Math.min(x, bounds.x + bounds.width - radius));
+        y = Math.max(bounds.y + bounds.height / 2. + radius, Math.min(y, bounds.y + bounds.height - radius));
     }
 
     public double getX() { return x; }
     public double getY() { return y; }
     public double getRad() { return radius; }
-    public double getVelocityX() { return x - prevX; }
-    public double getVelocityY() { return y - prevY; }
+    public double getVx() { return x - prevX; }
+    public double getVy() { return y - prevY; }
 }

@@ -21,8 +21,10 @@ public class AirHockeyPanel extends GamePanel implements MouseMotionListener {
 
     // 初期化処理
     void init() {
-        int width = window.getWidth();
-        int height = window.getHeight();
+        Dimension windowSize = window.getContentPane().getSize();
+        int width = windowSize.width;
+        int height = windowSize.height;
+        this.setPreferredSize(new Dimension(width, height));
 
         int fieldWidth = width / 2;
         int fieldHeight = height;
@@ -56,7 +58,6 @@ public class AirHockeyPanel extends GamePanel implements MouseMotionListener {
         Graphics2D g2d = (Graphics2D) g;
         field.draw(g2d);
     }
-
 
     // Mouse
     @Override

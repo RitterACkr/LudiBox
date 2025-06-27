@@ -50,7 +50,7 @@ public class Puck {
 
     // draw
     public void draw(Graphics2D g2d) {
-        g2d.setColor(Color.BLACK);
+        g2d.setColor(color);
         Ellipse2D.Double circle = new Ellipse2D.Double(x - radius, y - radius, radius * 2, radius * 2);
         g2d.fill(circle);
     }
@@ -58,21 +58,6 @@ public class Puck {
     public double getX() { return x; }
     public double getY() { return y; }
     public double getRad() { return radius; }
-
-//    if (distance < minDistance && distance != 0) {
-//        // 速度の更新
-//        vx = mal.getVelocityX();
-//        vy = mal.getVelocityY();
-//
-//        double overlap = minDistance - distance;
-//        double nx = dx / distance;
-//        double ny = dy / distance;
-//        x += nx * overlap;
-//        y += ny * overlap;
-//
-//        // ベクトルの反射
-//        double dot = vx * nx + vy * ny;
-//        vx = vx - 2 * dot * nx;
-//        vy = vy - 2 * dot * ny;
-//    }
+    public double getVx() { return vx; }
+    public double getVy() { return vy; }
 }
