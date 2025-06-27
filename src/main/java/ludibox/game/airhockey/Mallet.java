@@ -31,12 +31,19 @@ public class Mallet {
     }
 
     // 移動
-    public void setPos(double dx, double dy, Rectangle bounds) {
+    public void setPos(double dx, double dy) {
         prevX = x; prevY = y;   // 前回位置の保持
         x = dx; y = dy;
-        // 範囲外に出ないように制限
+    }
+
+    public void clampPlayerMallet(Rectangle bounds) {
         x = Math.max(bounds.x + radius, Math.min(x, bounds.x + bounds.width - radius));
         y = Math.max(bounds.y + bounds.height / 2. + radius, Math.min(y, bounds.y + bounds.height - radius));
+    }
+
+    public void clampAIMallet(Rectangle bounds) {
+        x = Math.max(bounds.x + radius, Math.min(x, bounds.x + bounds.width - radius));
+        y = Math.max(bounds.y + radius, Math.min(y, bounds.y + bounds.height / 2. - radius));
     }
 
     public double getX() { return x; }
