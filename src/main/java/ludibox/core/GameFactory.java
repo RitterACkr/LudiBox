@@ -1,11 +1,11 @@
 package ludibox.core;
 
-import ludibox.game.airhockey.AirHockeyPanel;
+import ludibox.game.tictactoe.TicTacToePanel;
 
 public class GameFactory {
     public static GamePanel createGame(MainWindow m, MiniGame game) {
         return switch (game) {
-            case AIR_HOCKEY -> new AirHockeyPanel(m);
+            case TIC_TAC_TOE -> new TicTacToePanel(m);
         };
     }
 }

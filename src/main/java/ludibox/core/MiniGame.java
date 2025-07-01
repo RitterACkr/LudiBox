@@ -1,7 +1,7 @@
 package ludibox.core;
 
 public enum MiniGame {
-    AIR_HOCKEY("AIR HOCKEY", 1);
+    TIC_TAC_TOE("Tic Tac Toe", 1);
 
     private final String name;
     private final int id;
