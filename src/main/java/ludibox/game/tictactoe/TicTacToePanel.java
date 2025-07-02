@@ -6,18 +6,20 @@ import ludibox.math.Vec2;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class TicTacToePanel extends GamePanel {
 
     private static final int GRID_SIZE = 3;
-    private final CellButton[][] cells = new CellButton[GRID_SIZE][GRID_SIZE];
+    private CellButton[][] cells = new CellButton[GRID_SIZE][GRID_SIZE];
 
     private OverlayPanel overlayPanel;  // オーバーレイパネル
     private JLabel infoLabel;           // 情報表示用ラベル
     private JPanel bottomButtonPanel;   // ボタンパネル
 
     private boolean isEnd = false; // ゲーム終了フラグ
-    private final Vec2[] drawPoints = new Vec2[2];
+    private Vec2[] drawPoints = new Vec2[2];
     // True: O, False: X
     private boolean turn = true;
 
@@ -29,12 +31,22 @@ public class TicTacToePanel extends GamePanel {
 
     /* 初期化 */
     public void init() {
+        // GUI系Componentの一括削除
+        this.removeAll();
+        this.revalidate();
+        this.repaint();
+
         this.setBackground(Color.LIGHT_GRAY);
+
+
+        // 内部記憶のリセット
+        isEnd = false;
+        cells = new CellButton[GRID_SIZE][GRID_SIZE];
+        drawPoints = new Vec2[2];
 
         // UI部分の生成
         createGridUI();
         createInfoUI();
-
     }
 
     /* ゲームの終了判定 */
@@ -77,14 +89,24 @@ public class TicTacToePanel extends GamePanel {
         return false;
     }
 
+    /* 盤面が埋まったか判定 */
+    private boolean checkFull() {
+        for (int i = 0; i < GRID_SIZE; i++) {
+            for (int j = 0; j < GRID_SIZE; j++) {
+                if (!cells[i][j].isSelected) return false;
+            }
+        }
+        return true;
+    }
+
     /* ターン変更処理 */
     private void changeTurn() {
         turn = !turn;
         infoLabel.setText("Turn: " + (turn ? "O" : "X"));
     }
 
-    /* ゲームの終了処理 */
-    private void finish() {
+    /* どちらかの勝利時の終了処理 */
+    private void winGame() {
         isEnd = true;
 
         overlayPanel.setOnAnimationEnd(() -> {
@@ -95,6 +117,37 @@ public class TicTacToePanel extends GamePanel {
         });
 
         overlayPanel.startAnimation();
+    }
+
+    /* 引き分け時の終了処理*/
+    private void drawGame() {
+         isEnd = true;
+
+         infoLabel.setText("DRAW");
+         bottomButtonPanel.setVisible(true);
+    }
+
+    /* ターンごとのジャッジ */
+    private void judge() {
+        if (checkEnd()) {
+            winGame();
+        } else if(checkFull()) {
+            drawGame();
+        } else {
+            changeTurn();
+        }
+    }
+
+    /* ゲームを閉じる */
+    @Override
+    protected void quit() {
+        init();
+        if (overlayPanel != null) {
+            overlayPanel.stopAnimation();
+            overlayPanel.setOnAnimationEnd(null);
+        }
+
+        super.quit();
     }
 
     /* 画面中央 - グリッド関係のUI */
@@ -138,8 +191,10 @@ public class TicTacToePanel extends GamePanel {
         infoLabel.setFont(new Font("Arial", Font.BOLD, 50));
         bottomPanel.add(infoLabel, BorderLayout.CENTER);
 
-        JButton restartButton = new JButton("Restart");
-        JButton exitButton = new JButton("Exit");
+        InfoButton restartButton = new InfoButton("Restart");
+        restartButton.addActionListener(e -> init());
+        InfoButton exitButton = new InfoButton("Exit");
+        exitButton.addActionListener(e -> quit());
         bottomButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         bottomButtonPanel.setOpaque(false);
         bottomButtonPanel.add(restartButton);
@@ -178,11 +233,8 @@ public class TicTacToePanel extends GamePanel {
             this.setText(turn ? "O" : "X");
             this.setBackground(turn ? new Color(255, 200, 200) : new Color(200, 200, 255));
             isSelected = true;
-            if (checkEnd()) {
-                finish();
-                return;
-            }
-            changeTurn();
+
+            judge();
         }
 
         public Vec2 getCenter() {
@@ -192,6 +244,7 @@ public class TicTacToePanel extends GamePanel {
         }
     }
 
+    /* 3line達成時にラインを引くためのレイヤー */
     private class OverlayPanel extends JPanel {
         // アニメーション変数
         private double progress = 0.;
@@ -241,6 +294,11 @@ public class TicTacToePanel extends GamePanel {
             delayTimer.start();
         }
 
+        public void stopAnimation() {
+            animationTimer.stop();
+            delayTimer.stop();
+        }
+
         private void animate() {
             progress += .08;
             if (progress >= 1.) {
@@ -249,6 +307,32 @@ public class TicTacToePanel extends GamePanel {
                 if (onAnimationEnd != null) onAnimationEnd.run();
             }
             repaint();
+        }
+    }
+
+    private class InfoButton extends JButton {
+
+        public InfoButton(String text) {
+            super(text);
+
+            this.setContentAreaFilled(false);
+            this.setOpaque(true);
+            this.setFocusPainted(false);
+            this.setBackground(Color.DARK_GRAY);
+            this.setForeground(Color.WHITE);
+            this.setFont(new Font("Arial", Font.BOLD, 16));
+
+            this.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mousePressed(MouseEvent e) {
+                    InfoButton.this.setBackground(Color.DARK_GRAY.brighter());
+                }
+
+                @Override
+                public void mouseReleased(MouseEvent e) {
+                    InfoButton.this.setBackground(Color.DARK_GRAY);
+                }
+            });
         }
     }
 }

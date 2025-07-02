@@ -11,4 +11,8 @@ public class GamePanel extends JPanel {
     public GamePanel(MainWindow m) {
         this.window = m;
     }
+
+    protected void quit() {
+        window.switchScreen(ScreenMode.MENU);
+    }
 }
