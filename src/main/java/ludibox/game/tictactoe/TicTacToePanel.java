@@ -9,6 +9,10 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
 public class TicTacToePanel extends GamePanel {
 
     private static final int GRID_SIZE = 3;
@@ -20,8 +24,16 @@ public class TicTacToePanel extends GamePanel {
 
     private boolean isEnd = false; // ゲーム終了フラグ
     private Vec2[] drawPoints = new Vec2[2];
-    // True: O, False: X
+    // True: O (Player), False: X (AI)
     private boolean turn = true;
+
+    // AIレベル
+    public enum AILevel {
+        RANDOM,
+        BASIC,
+        MIN_MAX
+    }
+    private AILevel aiLevel = AILevel.RANDOM;
 
     public TicTacToePanel(MainWindow m) {
         super(m);
@@ -99,10 +111,12 @@ public class TicTacToePanel extends GamePanel {
         return true;
     }
 
-    /* ターン変更処理 */
+    /* ターン変更処理 & AIの処理 */
     private void changeTurn() {
         turn = !turn;
         infoLabel.setText("Turn: " + (turn ? "O" : "X"));
+
+        if (!turn) scheduleAiMove();
     }
 
     /* どちらかの勝利時の終了処理 */
@@ -150,6 +164,54 @@ public class TicTacToePanel extends GamePanel {
         super.quit();
     }
 
+    /* AIの動作 */
+    private void scheduleAiMove() {
+        if (isEnd) return;
+
+        int delay = 400;
+        Timer aiTimer = new Timer(delay, e -> {
+            switch (aiLevel) {
+                case RANDOM -> aiMoveRandom();
+                case BASIC -> aiMoveBasic();
+                case MIN_MAX -> aiMoveMinMax();
+            }
+        });
+        aiTimer.setRepeats(false);
+        aiTimer.start();
+    }
+
+    /* AI Lv.1 - Random */
+    private void aiMoveRandom() {
+        List<CellButton> emptyCells = getEmptyCells();
+        if (!emptyCells.isEmpty()) {
+            CellButton selected = emptyCells.get(new Random().nextInt(emptyCells.size()));
+            selected.aiClick();
+        }
+    }
+
+    /* AI Lv.2 - Basic */
+    private void aiMoveBasic() {
+        aiMoveRandom(); // 仮置き
+    }
+
+    /* AI Lv.3 - Min_Max */
+    private void aiMoveMinMax() {
+        aiMoveRandom(); // 仮置き
+    }
+
+    /* 空いているセルの取得 */
+    private List<CellButton> getEmptyCells() {
+        List<CellButton> list = new ArrayList<>();
+        for (int i = 0; i < GRID_SIZE; i++) {
+            for (int j = 0; j < GRID_SIZE; j++) {
+                if (!cells[i][j].isSelected) list.add(cells[i][j]);
+            }
+        }
+        return list;
+    }
+
+
+    /* ----------------------- */
     /* 画面中央 - グリッド関係のUI */
     private void createGridUI() {
         // グリッド
@@ -227,8 +289,17 @@ public class TicTacToePanel extends GamePanel {
         }
 
         private void click() {
-            if (isSelected || isEnd) return;
+            if (isSelected || isEnd || !turn) return;
 
+            this.setForeground(turn ? Color.RED : Color.BLUE);
+            this.setText(turn ? "O" : "X");
+            this.setBackground(turn ? new Color(255, 200, 200) : new Color(200, 200, 255));
+            isSelected = true;
+
+            judge();
+        }
+
+        private void aiClick() {
             this.setForeground(turn ? Color.RED : Color.BLUE);
             this.setText(turn ? "O" : "X");
             this.setBackground(turn ? new Color(255, 200, 200) : new Color(200, 200, 255));
