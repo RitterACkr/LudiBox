@@ -21,12 +21,6 @@ public class TicTacToePanel extends GamePanel {
     // True: O (Player), False: X (AI)
     private boolean turn = true;
 
-    private final int[][] MAGIC_SQUARE = {
-        {8, 1, 6},
-        {3, 5, 7},
-        {4, 9, 2}
-    };
-
     // UI系
     private OverlayPanel overlayPanel;  // オーバーレイパネル
     private JLabel infoLabel;           // 情報表示用ラベル
@@ -226,7 +220,7 @@ public class TicTacToePanel extends GamePanel {
         // 1. 勝てるなら勝つ
         if (tryPlace("X")) return;
         // 2. 相手が勝ちそうなら守る
-        if (tryPlace("X")) return;
+        if (tryPlace("O")) return;
         // 3. 中央を優先
         if (!cells[1][1].isSelected) {
             cells[1][1].aiClick();
@@ -254,9 +248,7 @@ public class TicTacToePanel extends GamePanel {
         }
         // 斜め
         if (tryLine(cells[0][0], cells[1][1], cells[2][2], target)) return true;
-        if (tryLine(cells[0][2], cells[1][1], cells[2][0], target)) return true;
-
-        return false;
+        return tryLine(cells[0][2], cells[1][1], cells[2][0], target);
     }
 
     /* 渡された3マスのラインがリーチ状態かどうか判定し処理 */

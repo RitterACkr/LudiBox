@@ -4,7 +4,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.Serial;
 import java.util.Objects;
-import java.util.Set;
 
 // メインメニュー画面
 public class MenuPanel extends JPanel {
@@ -110,7 +109,7 @@ public class MenuPanel extends JPanel {
             super(game.getName());
 
             try {
-                backgroundImage = new ImageIcon(getClass().getResource("/bgimg/" + game.getPath())).getImage();
+                backgroundImage = new ImageIcon(Objects.requireNonNull(getClass().getResource("/bgimg/" + game.getPath()))).getImage();
             } catch (Exception e) {
                 e.printStackTrace();
             }

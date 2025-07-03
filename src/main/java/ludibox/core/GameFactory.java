@@ -12,9 +12,7 @@ public class GameFactory {
                 int level = ((TicTacToeSetupPanel) setup).getLevel();
                 yield new TicTacToePanel(window, level);
             }
-            case SNAKE_GAME -> {
-                yield new SnakeGamePanel(window);
-            }
+            case SNAKE_GAME -> new SnakeGamePanel(window);
         };
     }
 
