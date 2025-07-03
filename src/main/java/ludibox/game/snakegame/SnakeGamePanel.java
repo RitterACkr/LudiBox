@@ -12,13 +12,15 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Iterator;
+import java.util.Random;
 
 public class SnakeGamePanel extends GamePanel implements ActionListener, KeyListener {
     // データ
     private SnakeBoard board;
     private final Deque<Vec2> snake = new ArrayDeque<>();
-    private Vec2 food;          // Food座標
-    private int dx = 1, dy = 0; // 進行方向
+    private int dx = 1, dy = 0;     // 現在の進行方向
+    private int ndx = 1, ndy = 0;   // 次の進行方向
 
     // Timer
     private Timer timer;
@@ -57,6 +59,9 @@ public class SnakeGamePanel extends GamePanel implements ActionListener, KeyList
         snake.add(new Vec2(3, 10));
 
         board.setSnake(snake);
+
+        // food
+        board.generateFood();
     }
 
     private void start() {
@@ -67,6 +72,8 @@ public class SnakeGamePanel extends GamePanel implements ActionListener, KeyList
 
     @Override
     public void actionPerformed(ActionEvent e) {
+        dx = ndx; dy = ndy;
+
         assert snake.peekFirst() != null;
         Vec2 head = new Vec2(snake.peekFirst());
 
@@ -82,8 +89,9 @@ public class SnakeGamePanel extends GamePanel implements ActionListener, KeyList
         snake.addFirst(head);
 
         // Foodとの判定
-        if (head.equals(food)) {
-            System.out.println("FOOD処理");
+        if (board.checkFoodCollision(head)) {
+            System.out.println("OK");
+            board.generateFood();
         } else {
             // 最後尾の削除
             snake.removeLast();
@@ -96,16 +104,16 @@ public class SnakeGamePanel extends GamePanel implements ActionListener, KeyList
     public void keyPressed(KeyEvent e) {
         switch (e.getKeyCode()) {
             case KeyEvent.VK_UP, KeyEvent.VK_W -> {
-                if (dy == 0) { dx = 0; dy = -1; }
+                if (dy == 0) { ndx = 0; ndy = -1; }
             }
             case KeyEvent.VK_DOWN, KeyEvent.VK_S -> {
-                if (dy == 0) { dx = 0; dy = 1; }
+                if (dy == 0) { ndx = 0; ndy = 1; }
             }
             case KeyEvent.VK_LEFT, KeyEvent.VK_A -> {
-                if (dx == 0) { dx = -1; dy = 0; }
+                if (dx == 0) { ndx = -1; ndy = 0; }
             }
             case KeyEvent.VK_RIGHT, KeyEvent.VK_D -> {
-                if (dx == 0) { dx = 1; dy = 0; }
+                if (dx == 0) { ndx = 1; ndy = 0; }
             }
         }
     }
@@ -114,6 +122,11 @@ public class SnakeGamePanel extends GamePanel implements ActionListener, KeyList
     public void keyTyped(KeyEvent e) {}
     @Override
     public void keyReleased(KeyEvent e) {}
+
+    @Override
+    protected void quit() {
+        super.quit();
+    }
 
     private class SnakeBoard extends JPanel {
         // サイズ
@@ -138,6 +151,26 @@ public class SnakeGamePanel extends GamePanel implements ActionListener, KeyList
             return pos.x < 0. || pos.x >= COLS || pos.y < 0. || pos.y >= ROWS;
         }
 
+        /* foodとの衝突判定 */
+        private boolean checkFoodCollision(Vec2 pos) {
+            return food.equals(pos);
+        }
+
+        /* foodのランダム生成 */
+        private void generateFood() {
+            Random rand = new Random();
+            while (true) {
+                int x = rand.nextInt(COLS);
+                int y = rand.nextInt(ROWS);
+                Vec2 pos = new Vec2(x, y);
+
+                if (!snake.contains(pos)) {
+                    food = pos;
+                    break;
+                }
+            }
+        }
+
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
@@ -157,9 +190,17 @@ public class SnakeGamePanel extends GamePanel implements ActionListener, KeyList
 
             // snake
             if (snake != null) {
+                Iterator<Vec2> it = snake.iterator();
+
+                // 先頭
+                Vec2 head = it.next();
+                g.setColor(Color.ORANGE.darker());
+                g.fillRect((int) (head.x * TILE_SIZE), (int) (head.y * TILE_SIZE), TILE_SIZE, TILE_SIZE);
+
                 g.setColor(Color.BLUE.darker());
-                for (Vec2 v : snake) {
-                    g.fillRect((int) (v.x * TILE_SIZE), (int) (v.y * TILE_SIZE), TILE_SIZE, TILE_SIZE);
+                while (it.hasNext()) {
+                    Vec2 body = it.next();
+                    g.fillRect((int) (body.x * TILE_SIZE), (int) (body.y * TILE_SIZE), TILE_SIZE, TILE_SIZE);
                 }
             }
         }

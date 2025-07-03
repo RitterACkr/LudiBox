@@ -16,4 +16,13 @@ public class Vec2 {
     public void translate(double dx, double dy) {
         this.x += dx; this.y += dy;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Vec2 vec2 = (Vec2) o;
+        return x == vec2.x && y == vec2.y;
+    }
 }

@@ -167,7 +167,6 @@ public class TicTacToePanel extends GamePanel {
     /* ゲームを閉じる */
     @Override
     protected void quit() {
-        init();
         if (overlayPanel != null) {
             overlayPanel.stopAnimation();
             overlayPanel.setOnAnimationEnd(null);
