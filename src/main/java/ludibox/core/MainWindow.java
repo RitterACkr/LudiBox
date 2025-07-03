@@ -66,13 +66,13 @@ public class MainWindow extends JFrame {
     }
 
     // ゲームの開始
-    public void startGame(MiniGame game) {
+    public void startGame(MiniGame game, GameSetupPanel setupPanel) {
         // 既存のGamePanelを削除
         if (currentGamePanel != null) {
             this.getContentPane().remove(currentGamePanel);
         }
         // 新しいGamePanelの作成
-        currentGamePanel = GameFactory.createGame(this, game);
+        currentGamePanel = GameFactory.create(this, game, setupPanel);
         this.getContentPane().add(currentGamePanel, "GAME");
 
         // 表示切替

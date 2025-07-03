@@ -15,26 +15,40 @@ import java.util.Random;
 
 public class TicTacToePanel extends GamePanel {
 
-    private static final int GRID_SIZE = 3;
-    private CellButton[][] cells = new CellButton[GRID_SIZE][GRID_SIZE];
+    private final int GRID_SIZE = 3; // 盤面のサイズ (3x3)
+    private CellButton[][] cells = new CellButton[GRID_SIZE][GRID_SIZE];    // セル情報
+    private boolean isEnd = false; // ゲーム終了フラグ
+    // True: O (Player), False: X (AI)
+    private boolean turn = true;
 
+    private final int[][] MAGIC_SQUARE = {
+        {8, 1, 6},
+        {3, 5, 7},
+        {4, 9, 2}
+    };
+
+    // UI系
     private OverlayPanel overlayPanel;  // オーバーレイパネル
     private JLabel infoLabel;           // 情報表示用ラベル
     private JPanel bottomButtonPanel;   // ボタンパネル
-
-    private boolean isEnd = false; // ゲーム終了フラグ
-    private Vec2[] drawPoints = new Vec2[2];
-    // True: O (Player), False: X (AI)
-    private boolean turn = true;
+    private Vec2[] drawPoints = new Vec2[2];    // 勝利時に表示するラインの始点と終点
 
     // AIレベル
     public enum AILevel {
         RANDOM,
         BASIC,
-        MIN_MAX
+        MAGIC,
     }
-    private AILevel aiLevel = AILevel.RANDOM;
+    private AILevel aiLevel = AILevel.MAGIC;
 
+    public TicTacToePanel(MainWindow m, int level) {
+        this(m);
+        switch (level) {
+            case 0 -> aiLevel = AILevel.RANDOM;
+            case 1 -> aiLevel = AILevel.BASIC;
+            case 2 -> aiLevel = AILevel.MAGIC;
+        }
+    }
     public TicTacToePanel(MainWindow m) {
         super(m);
         this.setLayout(new BorderLayout());
@@ -53,6 +67,7 @@ public class TicTacToePanel extends GamePanel {
 
         // 内部記憶のリセット
         isEnd = false;
+        turn = true;
         cells = new CellButton[GRID_SIZE][GRID_SIZE];
         drawPoints = new Vec2[2];
 
@@ -116,11 +131,12 @@ public class TicTacToePanel extends GamePanel {
         turn = !turn;
         infoLabel.setText("Turn: " + (turn ? "O" : "X"));
 
-        if (!turn) scheduleAiMove();
+        if (!turn && !checkFull()) scheduleAiMove();
     }
 
     /* どちらかの勝利時の終了処理 */
     private void winGame() {
+        System.out.println("NG");
         isEnd = true;
 
         overlayPanel.setOnAnimationEnd(() -> {
@@ -135,8 +151,10 @@ public class TicTacToePanel extends GamePanel {
 
     /* 引き分け時の終了処理*/
     private void drawGame() {
+        System.out.println("OK");
          isEnd = true;
 
+         overlayPanel.setOnAnimationEnd(null);
          infoLabel.setText("DRAW");
          bottomButtonPanel.setVisible(true);
     }
@@ -173,30 +191,22 @@ public class TicTacToePanel extends GamePanel {
             switch (aiLevel) {
                 case RANDOM -> aiMoveRandom();
                 case BASIC -> aiMoveBasic();
-                case MIN_MAX -> aiMoveMinMax();
+                case MAGIC -> aiMoveMagic();
             }
         });
         aiTimer.setRepeats(false);
         aiTimer.start();
     }
 
+
     /* AI Lv.1 - Random */
     private void aiMoveRandom() {
+        // 空いてるマスの中からランダムに置く場所を決める
         List<CellButton> emptyCells = getEmptyCells();
         if (!emptyCells.isEmpty()) {
             CellButton selected = emptyCells.get(new Random().nextInt(emptyCells.size()));
             selected.aiClick();
         }
-    }
-
-    /* AI Lv.2 - Basic */
-    private void aiMoveBasic() {
-        aiMoveRandom(); // 仮置き
-    }
-
-    /* AI Lv.3 - Min_Max */
-    private void aiMoveMinMax() {
-        aiMoveRandom(); // 仮置き
     }
 
     /* 空いているセルの取得 */
@@ -210,6 +220,69 @@ public class TicTacToePanel extends GamePanel {
         return list;
     }
 
+
+    /* AI Lv.2 - Basic */
+    private void aiMoveBasic() {
+        // 1. 勝てるなら勝つ
+        if (tryPlace("X")) return;
+        // 2. 相手が勝ちそうなら守る
+        if (tryPlace("X")) return;
+        // 3. 中央を優先
+        if (!cells[1][1].isSelected) {
+            cells[1][1].aiClick();
+            return;
+        }
+        // 4. 角を取る
+        int[][] corners = {{0, 0}, {0, 2}, {2, 0}, {2, 2}};
+        for (int[] c : corners) {
+            if (!cells[c[0]][c[1]].isSelected) {
+                cells[c[0]][c[1]].aiClick();
+                return;
+            }
+        }
+        // 5. 空いてるマスに適当に置く
+        aiMoveRandom();
+    }
+
+    /* 自身を選択 -> 勝ちに行く, 相手を選択 -> 守りに行く */
+    private boolean tryPlace(String target) {
+        for (int i = 0; i < GRID_SIZE; i++) {
+            // 行
+            if (tryLine(cells[i][0], cells[i][1], cells[i][2], target)) return true;
+            // 列
+            if (tryLine(cells[0][i], cells[1][i], cells[2][i], target)) return true;
+        }
+        // 斜め
+        if (tryLine(cells[0][0], cells[1][1], cells[2][2], target)) return true;
+        if (tryLine(cells[0][2], cells[1][1], cells[2][0], target)) return true;
+
+        return false;
+    }
+
+    /* 渡された3マスのラインがリーチ状態かどうか判定し処理 */
+    private boolean tryLine(CellButton a, CellButton b, CellButton c, String target) {
+        int count = 0;
+        CellButton emptyButton = null;
+
+        for (CellButton cell : new CellButton[] {a, b, c}) {
+            if (cell.getText().equals(target)) count++;
+            else if (!cell.isSelected) emptyButton = cell;
+        }
+
+        // もしtargetが2つあって，あと1つが空のセルなら置く
+        if (count == 2 && emptyButton != null) {
+            emptyButton.aiClick();
+            return true;
+        }
+
+        return false;
+    }
+
+
+    /* AI Lv.3 - Min_Max */
+    private void aiMoveMagic() {
+        aiMoveBasic(); // 仮置き
+    }
 
     /* ----------------------- */
     /* 画面中央 - グリッド関係のUI */
@@ -339,7 +412,7 @@ public class TicTacToePanel extends GamePanel {
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
-            if (!isEnd) return;
+            if (!isEnd || drawPoints[0] == null || drawPoints[1] == null) return;
 
             Graphics2D g2d = (Graphics2D) g;
             g2d.setColor(Color.WHITE);

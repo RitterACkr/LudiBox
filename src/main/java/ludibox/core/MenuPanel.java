@@ -3,6 +3,7 @@ package ludibox.core;
 import javax.swing.*;
 import java.awt.*;
 import java.io.Serial;
+import java.util.Set;
 
 // メインメニュー画面
 public class MenuPanel extends JPanel {
@@ -33,7 +34,8 @@ public class MenuPanel extends JPanel {
         // ボタンの生成
         int row = 0, col = 0;
         for (MiniGame game : MiniGame.values()) {
-            MenuButton button = new MenuButton(game);
+            MenuButton button = new MenuButton(game.getName());
+            button.addActionListener(e -> showSetupPopup(game));
 
             // 配置位置
             gbc.gridx = col;
@@ -62,14 +64,42 @@ public class MenuPanel extends JPanel {
         this.add(scrollPane, BorderLayout.CENTER);
     }
 
+    /* セットアップの呼び出し */
+    private void showSetupPopup(MiniGame game) {
+        GameSetupPanel setupPanel = GameFactory.createSetup(game);
+
+        JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this));
+
+        dialog.setUndecorated(true);
+        dialog.setModal(true);
+        dialog.getContentPane().add(setupPanel.getPanel());
+        dialog.pack();
+        dialog.setLocationRelativeTo(null);
+
+        setupPanel.setOnStart(() -> {
+            mainWindow.startGame(game, setupPanel);
+            dialog.dispose();
+            remove(dialog);
+            revalidate();
+            repaint();
+        });
+        setupPanel.setOnCancel(() -> {
+            dialog.dispose();
+            remove(dialog);
+            revalidate();
+            repaint();
+        });
+
+        dialog.setVisible(true);
+    }
 
     /**
      * インナークラス - メニューボタン
      */
     private class MenuButton extends JButton {
 
-        MenuButton(MiniGame game) {
-            super(game.getName());
+        MenuButton(String name) {
+            super(name);
 
             // 高さ制限
             int maxHeight = 200;
@@ -90,8 +120,6 @@ public class MenuPanel extends JPanel {
             // 背景色の変更
             this.setBackground(new Color(80, 80, 80));
             this.setOpaque(true);
-
-            this.addActionListener(e -> mainWindow.startGame(game));
         }
     }
 }
