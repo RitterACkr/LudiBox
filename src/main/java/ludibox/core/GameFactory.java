@@ -1,5 +1,6 @@
 package ludibox.core;
 
+import ludibox.game.snakegame.SnakeGamePanel;
 import ludibox.game.tictactoe.TicTacToePanel;
 import ludibox.game.tictactoe.TicTacToeSetupPanel;
 
@@ -11,12 +12,16 @@ public class GameFactory {
                 int level = ((TicTacToeSetupPanel) setup).getLevel();
                 yield new TicTacToePanel(window, level);
             }
+            case SNAKE_GAME -> {
+                yield new SnakeGamePanel(window);
+            }
         };
     }
 
     public static GameSetupPanel createSetup(MiniGame game) {
         return switch (game) {
             case TIC_TAC_TOE -> new TicTacToeSetupPanel();
+            case SNAKE_GAME -> null;
         };
     }
 }

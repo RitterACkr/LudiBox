@@ -69,6 +69,12 @@ public class MenuPanel extends JPanel {
     private void showSetupPopup(MiniGame game) {
         GameSetupPanel setupPanel = GameFactory.createSetup(game);
 
+        // オプション設定がなければこのメソッドを中断してゲームを起動
+        if (setupPanel == null) {
+            mainWindow.startGame(game, null);
+            return;
+        }
+
         JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this));
 
         dialog.setUndecorated(true);
@@ -104,7 +110,7 @@ public class MenuPanel extends JPanel {
             super(game.getName());
 
             try {
-                backgroundImage = new ImageIcon(Objects.requireNonNull(getClass().getResource("/bgimg/" + game.getPath()))).getImage();
+                backgroundImage = new ImageIcon(getClass().getResource("/bgimg/" + game.getPath())).getImage();
             } catch (Exception e) {
                 e.printStackTrace();
             }
