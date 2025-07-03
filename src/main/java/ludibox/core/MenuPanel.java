@@ -3,6 +3,7 @@ package ludibox.core;
 import javax.swing.*;
 import java.awt.*;
 import java.io.Serial;
+import java.util.Objects;
 import java.util.Set;
 
 // メインメニュー画面
@@ -34,7 +35,7 @@ public class MenuPanel extends JPanel {
         // ボタンの生成
         int row = 0, col = 0;
         for (MiniGame game : MiniGame.values()) {
-            MenuButton button = new MenuButton(game.getName());
+            MenuButton button = new MenuButton(game);
             button.addActionListener(e -> showSetupPopup(game));
 
             // 配置位置
@@ -97,9 +98,16 @@ public class MenuPanel extends JPanel {
      * インナークラス - メニューボタン
      */
     private class MenuButton extends JButton {
+        private Image backgroundImage;
 
-        MenuButton(String name) {
-            super(name);
+        MenuButton(MiniGame game) {
+            super(game.getName());
+
+            try {
+                backgroundImage = new ImageIcon(Objects.requireNonNull(getClass().getResource("/bgimg/" + game.getPath()))).getImage();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
             // 高さ制限
             int maxHeight = 200;
@@ -114,12 +122,29 @@ public class MenuPanel extends JPanel {
             this.setForeground(Color.WHITE);
             this.setFont(new Font("Mono", Font.BOLD, 36));
 
-            //
+            // ボタンの反応
             this.setFocusPainted(false);
 
             // 背景色の変更
-            this.setBackground(new Color(80, 80, 80));
-            this.setOpaque(true);
+            this.setOpaque(false);
+            this.setContentAreaFilled(false);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2d = (Graphics2D) g.create();
+
+            if (backgroundImage != null) {
+                g2d.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
+            }
+
+            int textHeight = getFontMetrics(getFont()).getHeight();
+            int rectY = getHeight() - textHeight - 10;
+            g2d.setColor(new Color(0, 0, 0, 150));
+            g2d.fillRect(0, rectY, getWidth(), textHeight + 10);
+
+            g2d.dispose();
+            super.paintComponent(g);
         }
     }
 }
