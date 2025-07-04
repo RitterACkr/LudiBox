@@ -22,12 +22,12 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
 
     // Timer
     private Timer timer;
-    private int stepInterval = 150; // 現在のステップ時間
+    private final int STEP_INTERVAL = 160; // 現在のステップ時間
 
     // animation
     private Timer animationTimer;
     private float animeProgress = 1f;
-    private final int frameCount = 8;   // アニメーション分割数
+    private final int frameCount = 12;   // アニメーション分割数
     private int currentFrame = 0;
     List<Vec2> prevSnake;
 
@@ -51,7 +51,7 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0; gbc.weightx = .2; gbc.fill = GridBagConstraints.HORIZONTAL;
-        this.add(Box.createHorizontalStrut(40), gbc);
+        this.add(Box.createHorizontalStrut(10), gbc);
 
         gbc.gridx = 1; gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE; gbc.anchor = GridBagConstraints.CENTER;
@@ -74,7 +74,7 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
     }
 
     private void start() {
-        timer = new Timer(stepInterval, e -> {
+        timer = new Timer(STEP_INTERVAL, e -> {
             dx = ndx; dy = ndy;
 
             assert snake.peekFirst() != null;
@@ -94,7 +94,7 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
 
             // Foodとの判定
             if (board.checkFoodCollision(head)) {
-                System.out.println("OK");
+                board.eat();
                 board.generateFood();
             } else {
                 // 最後尾の削除
@@ -112,7 +112,7 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
 
     /* アニメーションの開始 */
     private void startAnimation() {
-        int frameInterval = stepInterval / frameCount;
+        int frameInterval = STEP_INTERVAL / frameCount;
 
         if (animationTimer != null) animationTimer.stop();
 
@@ -170,12 +170,13 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
 
     private class SnakeBoard extends JPanel {
         // サイズ
-        private static final int TILE_SIZE = 24;
-        public static final int ROWS = 20;
+        private static final int TILE_SIZE = 28;
+        public static final int ROWS = 16;
         public static final int COLS = 20;
 
         // 内部情報
         private Vec2 food;
+        private int eatenFood = 0;
         private Deque<Vec2> snake;
 
         // アニメーション情報
@@ -217,6 +218,11 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
                     break;
                 }
             }
+        }
+
+        /* foodカウント */
+        private void eat() {
+            eatenFood++;
         }
 
         @Override
