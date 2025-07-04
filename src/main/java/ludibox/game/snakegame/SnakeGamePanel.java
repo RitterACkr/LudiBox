@@ -45,6 +45,10 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
     /* 初期化処理 */
     private void init() {
         isStarted = false;
+        animeProgress = 1f; currentFrame = 0;
+
+        this.removeAll();
+        this.revalidate();
 
         this.setLayout(new GridBagLayout());
         this.setBackground(Color.LIGHT_GRAY.darker());
@@ -288,11 +292,11 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
     }
 
     private class InfoPanel extends JPanel {
-        private JLabel logoLabel;
-        private JLabel gameOverLabel;
-        private JLabel foodCountLabel;
-        private JButton restartButton;
-        private JButton exitButton;
+        private final JLabel logoLabel;
+        private final JLabel gameOverLabel;
+        private final JLabel foodCountLabel;
+        private final JButton restartButton;
+        private final JButton exitButton;
 
         public InfoPanel() {
             this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -333,9 +337,11 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
             restartButton = new JButton("RESTART");
             restartButton.addActionListener(e -> init());
             restartButton.setAlignmentX(CENTER_ALIGNMENT);
+            restartButton.setVisible(false);
             exitButton = new JButton("EXIT");
             exitButton.addActionListener(e -> quit());
             exitButton.setAlignmentX(CENTER_ALIGNMENT);
+            exitButton.setVisible(false);
 
 
             this.add(logoLabel);
@@ -359,9 +365,11 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
             foodCountLabel.setText("x " + count);
         }
 
-        /* ゲームオーバー表示 */
+        /* ゲームオーバー時の処理 */
         public void setGameOver() {
             gameOverLabel.setText("<html>GAME<br>OVER</html>");
+            restartButton.setVisible(true);
+            exitButton.setVisible(true);
         }
 
         /* ラベル設定の使いまわし */
