@@ -3,6 +3,7 @@ package ludibox.game.snakegame;
 import ludibox.core.GamePanel;
 import ludibox.core.MainWindow;
 import ludibox.math.Vec2;
+import ludibox.util.ImageLoader;
 
 import javax.swing.*;
 import javax.swing.Timer;
@@ -18,11 +19,11 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
     private final Deque<Vec2> snake = new ArrayDeque<>();
     private int dx = 1, dy = 0;     // 現在の進行方向
     private int ndx = 1, ndy = 0;   // 次の進行方向
-    private boolean isEnd = false;
 
     // Timer
     private Timer timer;
     private final int STEP_INTERVAL = 160; // 現在のステップ時間
+    private boolean isStarted = false;
 
     // animation
     private Timer animationTimer;
@@ -31,18 +32,19 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
     private int currentFrame = 0;
     List<Vec2> prevSnake;
 
+    // UI
+    private InfoPanel infoPanel;
+
 
     public SnakeGamePanel(MainWindow m) {
         super(m);
 
         init();
-
-        start();
     }
 
     /* 初期化処理 */
     private void init() {
-        isEnd = false;
+        isStarted = false;
 
         this.setLayout(new GridBagLayout());
         this.setBackground(Color.LIGHT_GRAY.darker());
@@ -59,7 +61,8 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
         this.add(board, gbc);
 
         gbc.gridx = 2; gbc.weightx = 1.; gbc.fill = GridBagConstraints.HORIZONTAL;
-        this.add(Box.createHorizontalStrut(100), gbc);
+        infoPanel = new InfoPanel();
+        this.add(infoPanel, gbc);
 
         // snake
         snake.clear();
@@ -69,8 +72,10 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
 
         board.setSnake(snake);
 
-        // food
         board.generateFood();
+
+        board.setAnimation(new ArrayList<>(snake), new ArrayList<>(snake), animeProgress);
+        board.repaint();
     }
 
     private void start() {
@@ -94,8 +99,9 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
 
             // Foodとの判定
             if (board.checkFoodCollision(head)) {
-                board.eat();
+                board.eatenFood++;
                 board.generateFood();
+                infoPanel.updateCount(board.getEatenFood());
             } else {
                 // 最後尾の削除
                 snake.removeLast();
@@ -136,6 +142,11 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
 
     @Override
     public void keyPressed(KeyEvent e) {
+        if (!isStarted) {
+            isStarted = true;
+            start();
+        }
+
         switch (e.getKeyCode()) {
             case KeyEvent.VK_UP, KeyEvent.VK_W -> {
                 if (dy == 0) { ndx = 0; ndy = -1; }
@@ -154,7 +165,7 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
 
     /* 1ゲームの終了 */
     private void finish() {
-        isEnd = true;
+        infoPanel.setGameOver();
         timer.stop();
     }
 
@@ -175,6 +186,7 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
         public static final int COLS = 20;
 
         // 内部情報
+        private final Image foodImg;
         private Vec2 food;
         private int eatenFood = 0;
         private Deque<Vec2> snake;
@@ -187,6 +199,10 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
         public SnakeBoard() {
             this.setPreferredSize(new Dimension(COLS * TILE_SIZE, ROWS * TILE_SIZE));
             this.setBackground(Color.LIGHT_GRAY.brighter());
+            foodImg = ImageLoader.resizeByWidth(
+                    ImageLoader.loadImage("snakegame/apple.png"),
+                    TILE_SIZE
+            );
         }
 
         public void setFood(Vec2 food) { this.food = food; }
@@ -220,10 +236,6 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
             }
         }
 
-        /* foodカウント */
-        private void eat() {
-            eatenFood++;
-        }
 
         @Override
         protected void paintComponent(Graphics g) {
@@ -250,8 +262,9 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
 
             // food
             if (food != null) {
-                g.setColor(Color.RED);
-                g.fillRect((int) (food.x * TILE_SIZE), (int) (food.y * TILE_SIZE), TILE_SIZE, TILE_SIZE);
+                int x = (int) (food.x * TILE_SIZE);
+                int y = (int) (food.y * TILE_SIZE);
+                g.drawImage(foodImg, x, y, TILE_SIZE, TILE_SIZE, this);
             }
 
             // snake
@@ -269,6 +282,94 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
                     g.fillRect((int) (x * TILE_SIZE), (int) (y * TILE_SIZE), TILE_SIZE, TILE_SIZE);
                 }
             }
+        }
+
+        private int getEatenFood() { return eatenFood; }
+    }
+
+    private class InfoPanel extends JPanel {
+        private JLabel logoLabel;
+        private JLabel gameOverLabel;
+        private JLabel foodCountLabel;
+        private JButton restartButton;
+        private JButton exitButton;
+
+        public InfoPanel() {
+            this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+            this.setPreferredSize(new Dimension(120, 500));
+            this.setOpaque(false);
+
+            // ロゴ表示
+            Image image = ImageLoader.resizeByWidth(
+                    ImageLoader.loadImage("snakegame/snake_logo.png"),
+                    getPreferredSize().width
+            );
+            logoLabel = new JLabel(new ImageIcon(image));
+            logoLabel.setAlignmentX(CENTER_ALIGNMENT);
+
+            // game-over
+            gameOverLabel = new JLabel("<html><br></html>", SwingConstants.CENTER);
+            gameOverLabel.setFont(new Font("Mono", Font.BOLD, 28));
+            gameOverLabel.setForeground(Color.RED.darker());
+            gameOverLabel.setAlignmentX(CENTER_ALIGNMENT);
+
+            // カウント
+            Image foodImg = ImageLoader.resizeByWidth(
+                    ImageLoader.loadImage("snakegame/apple.png"),
+                    getPreferredSize().width / 2
+            );
+            foodCountLabel = new JLabel(new ImageIcon(foodImg));
+            foodCountLabel.setText("x 0");
+            foodCountLabel.setFont(new Font("Arial", Font.BOLD, 36));
+            foodCountLabel.setAlignmentX(CENTER_ALIGNMENT);
+
+            // 操作方法
+            JLabel upLabel = createLabel("UP: ↑, W");
+            JLabel downLabel = createLabel("DOWN: ↓, S");
+            JLabel leftLabel = createLabel("LEFT: ←, A");
+            JLabel rightLabel = createLabel("RIGHT: →, D");
+
+            // ボタン
+            restartButton = new JButton("RESTART");
+            restartButton.addActionListener(e -> init());
+            restartButton.setAlignmentX(CENTER_ALIGNMENT);
+            exitButton = new JButton("EXIT");
+            exitButton.addActionListener(e -> quit());
+            exitButton.setAlignmentX(CENTER_ALIGNMENT);
+
+
+            this.add(logoLabel);
+            this.add(Box.createVerticalStrut(10));
+            this.add(gameOverLabel);
+            this.add(Box.createVerticalStrut(10));
+            this.add(foodCountLabel);
+            this.add(Box.createVerticalStrut(30));
+            this.add(upLabel);
+            this.add(downLabel);
+            this.add(leftLabel);
+            this.add(rightLabel);
+            this.add(Box.createVerticalStrut(30));
+            this.add(restartButton);
+            this.add(Box.createVerticalStrut(10));
+            this.add(exitButton);
+        }
+
+        /* カウント数の更新 */
+        public void updateCount(int count) {
+            foodCountLabel.setText("x " + count);
+        }
+
+        /* ゲームオーバー表示 */
+        public void setGameOver() {
+            gameOverLabel.setText("<html>GAME<br>OVER</html>");
+        }
+
+        /* ラベル設定の使いまわし */
+        private JLabel createLabel(String text) {
+            JLabel label = new JLabel(text, SwingConstants.CENTER);
+            label.setFont(new Font("Arial", Font.BOLD, 20));
+            label.setAlignmentX(CENTER_ALIGNMENT);
+            return label;
         }
     }
 }

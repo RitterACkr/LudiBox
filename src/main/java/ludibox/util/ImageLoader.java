@@ -25,4 +25,13 @@ public class ImageLoader {
         }
         return new ImageIcon(imageUrl);
     }
+
+    public static Image resizeByWidth(Image image, int width) {
+        ImageIcon icon = new ImageIcon(image);
+        int originalWidth = icon.getIconWidth();
+        int originalHeight = icon.getIconHeight();
+        int targetHeight = (int) ((double) originalHeight / originalWidth * width);
+
+        return icon.getImage().getScaledInstance(width, targetHeight, Image.SCALE_SMOOTH);
+    }
 }
