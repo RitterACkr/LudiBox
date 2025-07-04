@@ -5,7 +5,6 @@ import ludibox.util.ImageLoader;
 import javax.swing.*;
 import java.awt.*;
 import java.io.Serial;
-import java.util.Objects;
 
 // メインメニュー画面
 public class MenuPanel extends JPanel {
@@ -111,7 +110,7 @@ public class MenuPanel extends JPanel {
             super(game.getName());
 
             try {
-                backgroundImage = ImageLoader.loadImage("bgimg/" + game.getPath());
+                backgroundImage = ImageLoader.loadImage("menuImage/" + game.getPath());
             } catch (Exception e) {
                 e.printStackTrace();
             }

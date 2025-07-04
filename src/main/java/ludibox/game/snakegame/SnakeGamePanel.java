@@ -5,25 +5,32 @@ import ludibox.core.MainWindow;
 import ludibox.math.Vec2;
 
 import javax.swing.*;
+import javax.swing.Timer;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Iterator;
-import java.util.Random;
+import java.util.*;
+import java.util.List;
 
-public class SnakeGamePanel extends GamePanel implements ActionListener, KeyListener {
+public class SnakeGamePanel extends GamePanel implements KeyListener {
     // データ
     private SnakeBoard board;
     private final Deque<Vec2> snake = new ArrayDeque<>();
     private int dx = 1, dy = 0;     // 現在の進行方向
     private int ndx = 1, ndy = 0;   // 次の進行方向
+    private boolean isEnd = false;
 
     // Timer
     private Timer timer;
+    private int stepInterval = 150; // 現在のステップ時間
+
+    // animation
+    private Timer animationTimer;
+    private float animeProgress = 1f;
+    private final int frameCount = 8;   // アニメーション分割数
+    private int currentFrame = 0;
+    List<Vec2> prevSnake;
+
 
     public SnakeGamePanel(MainWindow m) {
         super(m);
@@ -35,8 +42,10 @@ public class SnakeGamePanel extends GamePanel implements ActionListener, KeyList
 
     /* 初期化処理 */
     private void init() {
+        isEnd = false;
+
         this.setLayout(new GridBagLayout());
-        this.setBackground(Color.GREEN.darker());
+        this.setBackground(Color.LIGHT_GRAY.darker());
         this.setFocusable(true);
         this.addKeyListener(this);
 
@@ -65,39 +74,64 @@ public class SnakeGamePanel extends GamePanel implements ActionListener, KeyList
     }
 
     private void start() {
-        timer = new Timer(300, this);
+        timer = new Timer(stepInterval, e -> {
+            dx = ndx; dy = ndy;
+
+            assert snake.peekFirst() != null;
+            Vec2 head = new Vec2(snake.peekFirst());
+            prevSnake = new ArrayList<>(snake);
+
+            head.translate(dx, dy);
+
+            // 衝突判定
+            if (board.checkWallCollision(head) || snake.contains(head)) {
+                finish();
+                return;
+            }
+
+            // 先頭の更新
+            snake.addFirst(head);
+
+            // Foodとの判定
+            if (board.checkFoodCollision(head)) {
+                System.out.println("OK");
+                board.generateFood();
+            } else {
+                // 最後尾の削除
+                snake.removeLast();
+            }
+
+            // アニメーションの開始
+            animeProgress = 0f;
+            currentFrame = 0;
+            startAnimation();
+        });
         timer.start();
         requestFocusInWindow();
     }
 
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        dx = ndx; dy = ndy;
+    /* アニメーションの開始 */
+    private void startAnimation() {
+        int frameInterval = stepInterval / frameCount;
 
-        assert snake.peekFirst() != null;
-        Vec2 head = new Vec2(snake.peekFirst());
+        if (animationTimer != null) animationTimer.stop();
 
-        head.translate(dx, dy);
+        animationTimer = new Timer(frameInterval, e -> {
+            currentFrame++;
+            animeProgress = (float) currentFrame / frameCount;
 
-        // 衝突判定
-        if (board.checkWallCollision(head) || snake.contains(head)) {
-            System.out.println("GAME OVER");
-            return;
-        }
+            if (animeProgress >= 1f) {
+                animeProgress = 1f;
+                animationTimer.stop();
+            }
 
-        // 先頭の更新
-        snake.addFirst(head);
+            board.setSnake(snake);
+            board.setFood(board.food);
+            board.setAnimation(new ArrayList<>(prevSnake), new ArrayList<>(snake), animeProgress);
+            board.repaint();
+        });
 
-        // Foodとの判定
-        if (board.checkFoodCollision(head)) {
-            System.out.println("OK");
-            board.generateFood();
-        } else {
-            // 最後尾の削除
-            snake.removeLast();
-        }
-
-        board.repaint();
+        animationTimer.start();
     }
 
     @Override
@@ -116,6 +150,12 @@ public class SnakeGamePanel extends GamePanel implements ActionListener, KeyList
                 if (dx == 0) { ndx = 1; ndy = 0; }
             }
         }
+    }
+
+    /* 1ゲームの終了 */
+    private void finish() {
+        isEnd = true;
+        timer.stop();
     }
 
     @Override
@@ -138,13 +178,21 @@ public class SnakeGamePanel extends GamePanel implements ActionListener, KeyList
         private Vec2 food;
         private Deque<Vec2> snake;
 
+        // アニメーション情報
+        private List<Vec2> prevSnake = new ArrayList<>();
+        private List<Vec2> currentSnake = new ArrayList<>();
+        private float animeProgress = 1f;
+
         public SnakeBoard() {
             this.setPreferredSize(new Dimension(COLS * TILE_SIZE, ROWS * TILE_SIZE));
-            this.setBackground(Color.GREEN.brighter());
+            this.setBackground(Color.LIGHT_GRAY.brighter());
         }
 
         public void setFood(Vec2 food) { this.food = food; }
         public void setSnake(Deque<Vec2> snake) { this.snake = snake; }
+        public void setAnimation(List<Vec2> from, List<Vec2> to, float progress) {
+            this.prevSnake = from; this.currentSnake = to; this.animeProgress = progress;
+        }
 
         /* 壁との衝突判定 */
         private boolean checkWallCollision(Vec2 pos) {
@@ -175,8 +223,20 @@ public class SnakeGamePanel extends GamePanel implements ActionListener, KeyList
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
 
+            // background
+            Color colorA = new Color(250, 248, 240);
+            Color colorB = new Color(240, 235, 225);
+
+            for (int y = 0; y < ROWS; y++) {
+                for (int x = 0; x < COLS; x++) {
+                    if ((x + y) % 2 == 0) g.setColor(colorA);
+                    else g.setColor(colorB);
+                    g.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                }
+            }
+
             // Grid
-            g.setColor(Color.DARK_GRAY);
+            g.setColor(Color.LIGHT_GRAY);
             for (int i = 1; i < COLS; i++)
                 g.drawLine(i * TILE_SIZE, 0, i * TILE_SIZE, ROWS * TILE_SIZE);
             for (int i = 1; i < ROWS; i++)
@@ -190,17 +250,17 @@ public class SnakeGamePanel extends GamePanel implements ActionListener, KeyList
 
             // snake
             if (snake != null) {
-                Iterator<Vec2> it = snake.iterator();
+                for (int i = 0; i < prevSnake.size(); i++) {
+                    Vec2 from = prevSnake.get(i);
+                    Vec2 to = currentSnake.get(i);
 
-                // 先頭
-                Vec2 head = it.next();
-                g.setColor(Color.ORANGE.darker());
-                g.fillRect((int) (head.x * TILE_SIZE), (int) (head.y * TILE_SIZE), TILE_SIZE, TILE_SIZE);
+                    float x = (float) (from.x + (to.x - from.x) * animeProgress);
+                    float y = (float) (from.y + (to.y - from.y) * animeProgress);
 
-                g.setColor(Color.BLUE.darker());
-                while (it.hasNext()) {
-                    Vec2 body = it.next();
-                    g.fillRect((int) (body.x * TILE_SIZE), (int) (body.y * TILE_SIZE), TILE_SIZE, TILE_SIZE);
+                    if (i == 0) g.setColor(new Color(60, 180, 60));
+                    else g.setColor(new Color(40, 140, 40));
+
+                    g.fillRect((int) (x * TILE_SIZE), (int) (y * TILE_SIZE), TILE_SIZE, TILE_SIZE);
                 }
             }
         }
