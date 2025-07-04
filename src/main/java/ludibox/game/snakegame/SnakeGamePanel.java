@@ -46,6 +46,7 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
     private void init() {
         isStarted = false;
         animeProgress = 1f; currentFrame = 0;
+        dx = 1; dy = 0; ndx = 1; ndy = 0;
 
         this.removeAll();
         this.revalidate();
