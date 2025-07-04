@@ -10,6 +10,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -34,6 +35,12 @@ public class TicTacToePanel extends GamePanel {
         MAGIC,
     }
     private AILevel aiLevel = AILevel.MAGIC;
+    private final int[][] BOARD_SCORE = {
+        {8, 3, 4},
+        {1, 5, 9},
+        {6, 7, 2}
+    };
+
 
     public TicTacToePanel(MainWindow m, int level) {
         this(m);
@@ -270,11 +277,10 @@ public class TicTacToePanel extends GamePanel {
     }
 
 
-    /* AI Lv.3 - Min_Max */
+    /* AI Lv.3 -  */
     private void aiMoveMagic() {
-        aiMoveBasic(); // 仮置き
+        aiMoveBasic();
     }
-
     /* ----------------------- */
     /* 画面中央 - グリッド関係のUI */
     private void createGridUI() {
