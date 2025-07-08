@@ -3,6 +3,8 @@ package ludibox.game.tictactoe;
 import ludibox.core.GamePanel;
 import ludibox.core.MainWindow;
 import ludibox.math.Vec2;
+import ludibox.ui.CustomButton;
+import ludibox.ui.CustomButtonStyle;
 
 import javax.swing.*;
 import java.awt.*;
@@ -323,9 +325,9 @@ public class TicTacToePanel extends GamePanel {
         infoLabel.setFont(new Font("Arial", Font.BOLD, 50));
         bottomPanel.add(infoLabel, BorderLayout.CENTER);
 
-        InfoButton restartButton = new InfoButton("Restart");
+        CustomButton restartButton = new CustomButton("Restart", CustomButtonStyle.SIMPLE);
         restartButton.addActionListener(e -> init());
-        InfoButton exitButton = new InfoButton("Exit");
+        CustomButton exitButton = new CustomButton("Exit", CustomButtonStyle.SIMPLE);
         exitButton.addActionListener(e -> quit());
         bottomButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         bottomButtonPanel.setOpaque(false);
@@ -448,32 +450,6 @@ public class TicTacToePanel extends GamePanel {
                 if (onAnimationEnd != null) onAnimationEnd.run();
             }
             repaint();
-        }
-    }
-
-    private class InfoButton extends JButton {
-
-        public InfoButton(String text) {
-            super(text);
-
-            this.setContentAreaFilled(false);
-            this.setOpaque(true);
-            this.setFocusPainted(false);
-            this.setBackground(Color.DARK_GRAY);
-            this.setForeground(Color.WHITE);
-            this.setFont(new Font("Arial", Font.BOLD, 16));
-
-            this.addMouseListener(new MouseAdapter() {
-                @Override
-                public void mousePressed(MouseEvent e) {
-                    InfoButton.this.setBackground(Color.DARK_GRAY.brighter());
-                }
-
-                @Override
-                public void mouseReleased(MouseEvent e) {
-                    InfoButton.this.setBackground(Color.DARK_GRAY);
-                }
-            });
         }
     }
 }

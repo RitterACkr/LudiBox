@@ -2,6 +2,8 @@ package ludibox.game.tictactoe;
 
 import ludibox.core.GameSetupPanel;
 import ludibox.core.MiniGame;
+import ludibox.ui.CustomButton;
+import ludibox.ui.CustomButtonStyle;
 
 import javax.swing.*;
 import java.awt.*;
@@ -36,11 +38,11 @@ public class TicTacToeSetupPanel implements GameSetupPanel {
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         buttonPanel.setOpaque(false);
-        JButton startButton = new JButton("Start");
+        CustomButton startButton = new CustomButton("Start", CustomButtonStyle.SIMPLE);
         startButton.addActionListener(e -> {
             if (onStart != null) onStart.run();
         });
-        JButton cancelButton = new JButton("Cancel");
+        CustomButton cancelButton = new CustomButton("Cancel", CustomButtonStyle.SIMPLE);
         cancelButton.addActionListener(e -> {
             if (onCancel != null) onCancel.run();
         });
