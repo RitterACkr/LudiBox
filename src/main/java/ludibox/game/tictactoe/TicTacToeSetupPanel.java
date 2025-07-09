@@ -27,7 +27,7 @@ public class TicTacToeSetupPanel implements GameSetupPanel {
         JLabel label = new JLabel("AIの強さを選んでください");
         label.setFont(new Font("Mono", Font.BOLD, 16));
 
-        String[] options = {"Lv.1 (ランダム)", "Lv.2 (ルールベース)", "Lv.3 (未実装)"};
+        String[] options = {"Lv.1 (ランダム)", "Lv.2 (ルールベース)", "Lv.3 (ミニマックス)"};
         comboBox = new JComboBox<>(options);
 
         comboBox.setAlignmentX(Component.CENTER_ALIGNMENT);

@@ -8,11 +8,8 @@ import ludibox.ui.CustomButtonStyle;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -34,9 +31,9 @@ public class TicTacToePanel extends GamePanel {
     public enum AILevel {
         RANDOM,
         BASIC,
-        MAGIC,
+        MINIMAX,
     }
-    private AILevel aiLevel = AILevel.MAGIC;
+    private AILevel aiLevel;
     private final int[][] BOARD_SCORE = {
         {8, 3, 4},
         {1, 5, 9},
@@ -49,7 +46,7 @@ public class TicTacToePanel extends GamePanel {
         switch (level) {
             case 0 -> aiLevel = AILevel.RANDOM;
             case 1 -> aiLevel = AILevel.BASIC;
-            case 2 -> aiLevel = AILevel.MAGIC;
+            case 2 -> aiLevel = AILevel.MINIMAX;
         }
     }
     public TicTacToePanel(MainWindow m) {
@@ -193,7 +190,7 @@ public class TicTacToePanel extends GamePanel {
             switch (aiLevel) {
                 case RANDOM -> aiMoveRandom();
                 case BASIC -> aiMoveBasic();
-                case MAGIC -> aiMoveMagic();
+                case MINIMAX -> aiMoveMinimax();
             }
         });
         aiTimer.setRepeats(false);
@@ -280,9 +277,99 @@ public class TicTacToePanel extends GamePanel {
 
 
     /* AI Lv.3 -  */
-    private void aiMoveMagic() {
-        aiMoveBasic();
+    private void aiMoveMinimax() {
+        int bestScore = Integer.MIN_VALUE;
+        Vec2 bestMove = null;
+
+        for (int i = 0; i < GRID_SIZE; i++) {
+            for (int j = 0; j < GRID_SIZE; j++) {
+                if (!cells[i][j].isSelected) {
+                    cells[i][j].setText("X");
+                    cells[i][j].isSelected = true;
+                    int score = minimax(0, false);
+                    cells[i][j].setText("");
+                    cells[i][j].isSelected =  false;
+
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMove = new Vec2(i, j);
+                    }
+                }
+            }
+        }
+
+        if (bestMove != null) {
+            cells[(int) bestMove.x][(int) bestMove.y].aiClick();
+        } else {
+            aiMoveRandom();
+        }
     }
+
+    /* Minimaxアルゴリズム */
+    private int minimax(int depth, boolean isMaximizing) {
+        Integer score = evaluateBoard();
+        if (score != null) return score;
+
+        if (isMaximizing) {
+            int best = Integer.MIN_VALUE;
+            for (int i = 0; i < GRID_SIZE; i++) {
+                for (int j = 0; j < GRID_SIZE; j++) {
+                    if (!cells[i][j].isSelected) {
+                        cells[i][j].setText("X");
+                        cells[i][j].isSelected = true;
+                        int val = minimax(depth + 1, false);
+                        cells[i][j].setText("");
+                        cells[i][j].isSelected = false;
+                        best = Math.max(best, val);
+                    }
+                }
+            }
+            return best;
+        } else {
+            int best = Integer.MAX_VALUE;
+            for (int i = 0; i < GRID_SIZE; i++) {
+                for (int j = 0; j < GRID_SIZE; j++) {
+                    if (!cells[i][j].isSelected) {
+                        cells[i][j].setText("O");
+                        cells[i][j].isSelected = true;
+                        int val = minimax(depth + 1, true);
+                        cells[i][j].setText("");
+                        cells[i][j].isSelected = false;
+                        best = Math.min(best, val);
+                    }
+                }
+            }
+            return best;
+        }
+    }
+
+    /* 状況に応じたスコア評価 */
+    private Integer evaluateBoard() {
+        if (checkWinner("X")) return +10;
+        if (checkWinner("O")) return -10;
+        if (checkFull()) return 0;
+        return null;
+    }
+
+    /* 勝者のチェック */
+    private boolean checkWinner(String s) {
+        for (int i = 0; i < GRID_SIZE; i++) {
+            if (s.equals(cells[i][0].getText()) &&
+                s.equals(cells[i][1].getText()) &&
+                s.equals(cells[i][2].getText())) return true;
+            if (s.equals(cells[0][i].getText()) &&
+                s.equals(cells[1][i].getText()) &&
+                s.equals(cells[2][i].getText())) return true;
+        }
+        return (s.equals(cells[0][0].getText()) &&
+                s.equals(cells[1][1].getText()) &&
+                s.equals(cells[2][2].getText())) ||
+                (s.equals(cells[0][2].getText()) &&
+                s.equals(cells[1][1].getText()) &&
+                s.equals(cells[2][0].getText()));
+    }
+
+
     /* ----------------------- */
     /* 画面中央 - グリッド関係のUI */
     private void createGridUI() {

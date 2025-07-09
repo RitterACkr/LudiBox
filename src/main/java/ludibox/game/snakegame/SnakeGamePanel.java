@@ -3,6 +3,8 @@ package ludibox.game.snakegame;
 import ludibox.core.GamePanel;
 import ludibox.core.MainWindow;
 import ludibox.math.Vec2;
+import ludibox.ui.CustomButton;
+import ludibox.ui.CustomButtonStyle;
 import ludibox.util.ImageLoader;
 
 import javax.swing.*;
@@ -296,8 +298,8 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
         private final JLabel logoLabel;
         private final JLabel gameOverLabel;
         private final JLabel foodCountLabel;
-        private final JButton restartButton;
-        private final JButton exitButton;
+        private final CustomButton restartButton;
+        private final CustomButton exitButton;
 
         public InfoPanel() {
             this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -335,11 +337,11 @@ public class SnakeGamePanel extends GamePanel implements KeyListener {
             JLabel rightLabel = createLabel("RIGHT: →, D");
 
             // ボタン
-            restartButton = new JButton("RESTART");
+            restartButton = new CustomButton("RESTART", CustomButtonStyle.SIMPLE);
             restartButton.addActionListener(e -> init());
             restartButton.setAlignmentX(CENTER_ALIGNMENT);
             restartButton.setVisible(false);
-            exitButton = new JButton("EXIT");
+            exitButton = new CustomButton("EXIT", CustomButtonStyle.SIMPLE);
             exitButton.addActionListener(e -> quit());
             exitButton.setAlignmentX(CENTER_ALIGNMENT);
             exitButton.setVisible(false);
