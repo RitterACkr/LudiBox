@@ -67,13 +67,18 @@ public class TicTacToePanel extends GamePanel {
 
         // 内部記憶のリセット
         isEnd = false;
-        turn = true;
         cells = new CellButton[GRID_SIZE][GRID_SIZE];
         drawPoints = new Vec2[2];
 
         // UI部分の生成
         createGridUI();
         createInfoUI();
+
+        // ターン決め
+        turn = new Random().nextBoolean();
+        infoLabel.setText("Turn: " + (turn ? "O (YOU)" : "X (AI)"));
+
+        if (!turn) scheduleAiMove();
     }
 
     /* ゲームの終了判定 */
@@ -408,7 +413,7 @@ public class TicTacToePanel extends GamePanel {
         JPanel bottomPanel = new JPanel(new BorderLayout());
         bottomPanel.setOpaque(false);
 
-        infoLabel = new JLabel("Turn: " + (turn ? "O" : "X"), SwingConstants.CENTER);
+        infoLabel = new JLabel("Turn: " + (turn ? "O (YOU)" : "X (AI)"), SwingConstants.CENTER);
         infoLabel.setFont(new Font("Arial", Font.BOLD, 50));
         bottomPanel.add(infoLabel, BorderLayout.CENTER);
 
