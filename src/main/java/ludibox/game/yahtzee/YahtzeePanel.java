@@ -24,6 +24,10 @@ public class YahtzeePanel extends GamePanel {
     private JButton rollButton;
     private ScoreBoardPanel scoreBoardPanel;
 
+    private final int MAX_ROLL = 3;
+    private int rollCount = 0;
+    private boolean turn = true;    // True: Player, False: CPU
+
     public YahtzeePanel(MainWindow m) {
         super(m);
         init();
@@ -48,13 +52,17 @@ public class YahtzeePanel extends GamePanel {
             Dice d = new Dice(diceImages);
             d.setBounds(20 + i * 70, 50, 60, 60);
             this.add(d);
-            d.roll();
             dices[i] = d;
         }
 
         rollButton = new JButton("ROLL");
         rollButton.setBounds(20, 200, 100, 40);
         rollButton.addActionListener(e -> {
+            if (rollCount >= MAX_ROLL) return;
+
+            rollButton.setEnabled(false);
+            rollCount++;
+            updateRollButtonLabel();
             for (Dice d : dices) d.roll();
             repaint();
 
@@ -62,8 +70,13 @@ public class YahtzeePanel extends GamePanel {
                 var predicted = ScoreCalculator.predict(dices);
                 scoreBoardPanel.getModel().setPredictedScores(predicted);
                 ((Timer) ev.getSource()).stop();
+
+                if (rollCount < MAX_ROLL) {
+                    rollButton.setEnabled(true);
+                }
             }).start();
         });
+        updateRollButtonLabel();
         this.add(rollButton);
 
         scoreBoardPanel = new ScoreBoardPanel();
@@ -77,9 +90,97 @@ public class YahtzeePanel extends GamePanel {
         super.paintComponent(g);
     }
 
+    private void updateRollButtonLabel() {
+        int remaining = MAX_ROLL - rollCount;
+        if (remaining > 0) {
+            rollButton.setText("Roll - " + remaining);
+        } else {
+            rollButton.setText("No Rolls Left...");
+        }
+    }
+
+    private void changeTurn() {
+        // ターンの切り替え
+        turn = !turn;
+
+        // ダイスのアンロック
+        for (Dice d : dices) d.locked = false;
+    }
+
+    /* AIムーブ */
+    private void aiMove() {
+        for (int count = 0; count < MAX_ROLL; count++) {
+            // ダイスを振る
+            for (Dice d: dices) {
+                if (!d.locked) d.roll();
+            }
+
+            try {
+                Thread.sleep(900);  // Rollアニメーション待ち
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            // ロック判定
+            Set<Integer> bestValues = chooseDiceValuesToKeep();
+            for (Dice d : dices) {
+                d.locked = bestValues.contains(d.getValue());
+            }
+        }
+
+        // 最後にスコアの確定
+        Map<ScoreCategory, Integer> predicted = ScoreCalculator.predict(dices);
+        ScoreCategory best = selectBestCategory(predicted);
+        if (best != null) {
+            ScoreBoardModel model = scoreBoardPanel.getModel();
+            model.setOpponentScore(best, predicted.get(best));
+            model.updateTotal();
+            scoreBoardPanel.repaint();
+        }
+
+        changeTurn();
+    }
+
+    /* ロックする目を選ぶ */
+    private Set<Integer> chooseDiceValuesToKeep() {
+        int[] counts = new int[6];
+        for (Dice d : dices) counts[d.getValue() - 1]++;
+
+        int maxCount =0, target = 1;
+        for (int i = 0; i < 6; i++) {
+            if (counts[i] > maxCount) {
+                maxCount = counts[i];
+                target = i + 1;
+            }
+        }
+
+        Set<Integer> keep = new HashSet<>();
+        keep.add(target);
+        return keep;
+    }
+
+    /* 最善手の選択 */
+    private ScoreCategory selectBestCategory(Map<ScoreCategory, Integer> predicted) {
+        int max = -1;
+        ScoreCategory best = null;
+        for (Map.Entry<ScoreCategory, Integer> entry : predicted.entrySet()) {
+            if (entry.getKey() == ScoreCategory.TOTAL) continue;
+
+            ScoreEntry e = scoreBoardPanel.getModel().getEntry(entry.getKey().ordinal());
+            if (e.opponentScore == null) {
+                if (entry.getValue() > max) {
+                    max = entry.getValue();
+                    best = entry.getKey();
+                }
+            }
+        }
+        return best;
+    }
+
+
     /* Diceクラス */
     private class Dice extends JButton  {
-        private int value = 1;
+        private int value = 0;
         private boolean locked = false;
         private final Image[] buffer;
 
@@ -240,7 +341,8 @@ public class YahtzeePanel extends GamePanel {
                         }
                     }
 
-
+                    // ターン切替
+                    // AIの処理へ移行
                 }
             });
 
@@ -310,6 +412,23 @@ public class YahtzeePanel extends GamePanel {
                 if (e.category == cat) {
                     e.myScore = score;
                     e.myPredictedScore = null;
+
+                    // ロール回数のリセット
+                    rollCount = 0;
+
+                    // 予測スコアのクリア
+                    clearPredictions();
+                    updateTotal();
+                    fireTableDataChanged();
+                    return;
+                }
+            }
+        }
+
+        public void setOpponentScore(ScoreCategory cat, int score) {
+            for (ScoreEntry e : entries) {
+                if (e.category == cat) {
+                    e.opponentScore = score;
                     fireTableDataChanged();
                     return;
                 }
