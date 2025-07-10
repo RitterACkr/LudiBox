@@ -3,6 +3,7 @@ package ludibox.core;
 import ludibox.game.snakegame.SnakeGamePanel;
 import ludibox.game.tictactoe.TicTacToePanel;
 import ludibox.game.tictactoe.TicTacToeSetupPanel;
+import ludibox.game.yahtzee.YahtzeePanel;
 
 public class GameFactory {
 
@@ -13,6 +14,7 @@ public class GameFactory {
                 yield new TicTacToePanel(window, level);
             }
             case SNAKE_GAME -> new SnakeGamePanel(window);
+            case YAHTZEE -> new YahtzeePanel(window);
         };
     }
 
@@ -20,6 +22,7 @@ public class GameFactory {
         return switch (game) {
             case TIC_TAC_TOE -> new TicTacToeSetupPanel();
             case SNAKE_GAME -> null;
+            case YAHTZEE -> null;
         };
     }
 }

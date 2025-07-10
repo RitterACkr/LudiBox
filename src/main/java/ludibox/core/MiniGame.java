@@ -2,7 +2,8 @@ package ludibox.core;
 
 public enum MiniGame {
     TIC_TAC_TOE("Tic Tac Toe", 1, "tic_tac_toe.png"),
-    SNAKE_GAME("Snake Game", 2, "snake_game.png");
+    SNAKE_GAME("Snake Game", 2, "snake_game.png"),
+    YAHTZEE("Yahtzee", 3, "yahtzee.png");
 
     private final String name;
     private final int id;
