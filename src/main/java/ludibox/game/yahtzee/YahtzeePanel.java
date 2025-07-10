@@ -7,8 +7,8 @@ import ludibox.util.ImageLoader;
 import javax.swing.*;
 import javax.swing.Timer;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.*;
@@ -18,9 +18,9 @@ import java.util.List;
 public class YahtzeePanel extends GamePanel {
 
     // 画像バッファ
-    private Image[] diceImages = new Image[6];
+    private final Image[] diceImages = new Image[6];
 
-    private Dice[] dices = new Dice[5];
+    private final Dice[] dices = new Dice[5];
     private JButton rollButton;
     private ScoreBoardPanel scoreBoardPanel;
 
@@ -81,7 +81,7 @@ public class YahtzeePanel extends GamePanel {
     private class Dice extends JButton  {
         private int value = 1;
         private boolean locked = false;
-        private Image[] buffer;
+        private final Image[] buffer;
 
         // アニメーション
         private Timer rollTimer;
@@ -165,6 +165,8 @@ public class YahtzeePanel extends GamePanel {
         }
     }
 
+
+
     /* ScoreBoard */
     public class ScoreBoardPanel extends JPanel {
         private final JTable table;
@@ -178,20 +180,67 @@ public class YahtzeePanel extends GamePanel {
             table.setRowHeight(25);
             table.setFocusable(false);
             table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+            table.setRowSelectionAllowed(false);
+            table.setColumnSelectionAllowed(false);
+            table.setCellSelectionEnabled(false);
+
+            for (int i = 0; i < table.getColumnCount(); i++) {
+                final int col = i;
+
+                table.getColumnModel().getColumn(i).setCellRenderer(new DefaultTableCellRenderer() {
+                    @Override
+                    public Component getTableCellRendererComponent(
+                            JTable table, Object value, boolean isSelected,
+                            boolean hasFocus, int row, int column
+                    ) {
+                        Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                        setHorizontalAlignment(SwingConstants.CENTER);
+                        c.setFont(new Font("Arial", Font.BOLD, 14));
+
+                        // 背景色 & 文字色
+                        if (col == 1) {
+                            if (model.isCellSelected(row, column)) {
+                                c.setBackground(Color.RED);
+                                c.setForeground(Color.WHITE);
+                            } else {
+                                c.setBackground(new Color(255, 230, 230));
+                                c.setForeground(new Color(120, 120, 120));
+                            }
+                        } else if (col == 2) {
+                            if (model.isCellSelected(row, column)) {
+                                c.setBackground(Color.BLUE);
+                                c.setForeground(Color.WHITE);
+                            } else {
+                                c.setBackground(new Color(230, 240, 255));
+                                c.setForeground(new Color(120, 120, 120));
+                            }
+                        } else {
+                            c.setBackground(Color.WHITE);
+                            c.setForeground(Color.BLACK);
+                        }
+                        return c;
+                    }
+                });
+            }
 
             table.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     int row = table.rowAtPoint(e.getPoint());
-                    if (row < ScoreCategory.TOTAL.ordinal()) {
+                    int col = table.columnAtPoint(e.getPoint());
+
+                    if (row < ScoreCategory.TOTAL.ordinal() && 1 <= col) {
                         ScoreEntry entry = model.getEntry(row);
                         if (entry.myScore == null && entry.myPredictedScore != null) {
                             entry.myScore = entry.myPredictedScore;
                             entry.myPredictedScore = null;
+                            model.selectCell(row, col);
                             model.updateTotal();
-                            model.fireTableRowsUpdated(row, row);
+                            model.fireTableCellUpdated(row, col);
                         }
                     }
+
+
                 }
             });
 
@@ -200,6 +249,8 @@ public class YahtzeePanel extends GamePanel {
 
         public ScoreBoardModel getModel() { return model; }
     }
+
+
 
     /* ScoreCategory */
     enum ScoreCategory {
@@ -230,7 +281,7 @@ public class YahtzeePanel extends GamePanel {
 
         public String getDisplayMyScore() {
             return myScore != null ? myScore.toString()
-                    : myPredictedScore != null ? "(" + myPredictedScore + ")"
+                    : myPredictedScore != null ? String.valueOf(myPredictedScore)
                     : "";
         }
 
@@ -239,10 +290,13 @@ public class YahtzeePanel extends GamePanel {
         }
     }
 
+
+
     /* Table Model */
     class ScoreBoardModel extends AbstractTableModel {
         private final List<ScoreEntry> entries;
         private final String[] colNames = { "Category", "YOU", "CPU" };
+        private final Set<Point> selectedCells = new HashSet<>();
 
         public ScoreBoardModel() {
             entries = new ArrayList<>();
@@ -279,12 +333,23 @@ public class YahtzeePanel extends GamePanel {
         }
 
         public void updateTotal() {
-            int total = entries.stream()
+            getEntry(entries.size() - 1).myScore = entries.stream()
                     .filter(e -> e.myScore != null && e.category != ScoreCategory.TOTAL)
                     .mapToInt(e -> e.myScore)
                     .sum();
-            getEntry(entries.size() - 1).myScore = total;
             fireTableDataChanged();
+        }
+
+        public void selectCell(int row, int col) {
+            Point cell = new Point(row, col);
+            selectedCells.add(cell);
+            System.out.println(row);
+            System.out.println(col);
+            fireTableCellUpdated(row, col);
+        }
+
+        public boolean isCellSelected(int row, int col) {
+            return selectedCells.contains(new Point(row, col));
         }
 
         public ScoreEntry getEntry(int row) { return entries.get(row); }
@@ -310,6 +375,8 @@ public class YahtzeePanel extends GamePanel {
         @Override
         public boolean isCellEditable(int rowIdx, int colIdx) { return false; }
     }
+
+
 
     /* スコアの計算クラス */
     public class ScoreCalculator {
