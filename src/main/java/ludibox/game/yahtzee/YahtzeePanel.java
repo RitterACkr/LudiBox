@@ -26,7 +26,8 @@ public class YahtzeePanel extends GamePanel {
 
     private final int MAX_ROLL = 3;
     private int rollCount = 0;
-    private boolean turn = true;    // True: Player, False: CPU
+    private boolean isTurn = true;    // True: Player, False: CPU
+    private boolean isEnd = false;
 
     public YahtzeePanel(MainWindow m) {
         super(m);
@@ -101,7 +102,12 @@ public class YahtzeePanel extends GamePanel {
 
     /* AIムーブ */
     private void aiMove() {
-        for (Dice d : dices) d.locked = false;
+        isTurn = false;
+
+        for (Dice d : dices) {
+            d.value = 0;
+            d.locked = false;
+        }
 
         ScoreBoardModel model = scoreBoardPanel.getModel();
         final int[] step = {0};
@@ -138,15 +144,23 @@ public class YahtzeePanel extends GamePanel {
                     if (best != null) {
                         model.setOpponentScore(best, predicted.get(best));
                         model.selectCell(best.ordinal(), 2);
-                        model.updateTotal();
+                        model.updateOpponentTotal();
                         scoreBoardPanel.repaint();
+                        checkGameEnd();
 
-                        // ターンを渡す
-                        model.clearOpponentPredictions();
-                        for (Dice d : dices) d.locked = false;
-                        rollCount = 0;
-                        updateRollButtonLabel();
-                        rollButton.setEnabled(true);
+                        if (!isEnd) {
+                            // ターンを渡す
+                            model.clearOpponentPredictions();
+                            for (Dice d : dices) {
+                                d.value = 0;
+                                d.locked = false;
+                                d.repaint();
+                            }
+                            rollCount = 0;
+                            updateRollButtonLabel();
+                            rollButton.setEnabled(true);
+                            isTurn = true;
+                        }
                     }
                 }).start();
             }
@@ -189,6 +203,35 @@ public class YahtzeePanel extends GamePanel {
         return best;
     }
 
+    private void checkGameEnd() {
+        boolean myDone = scoreBoardPanel.getModel().isAllMyScoreFilled();
+        boolean opponentDone = scoreBoardPanel.getModel().isAllOpponentScoreFilled();
+
+        if (myDone && opponentDone) {
+            isTurn = true;
+
+            int myScore = scoreBoardPanel.getModel().getEntry(ScoreCategory.TOTAL.ordinal()).myScore;
+            int opponentScore = scoreBoardPanel.getModel().getEntry(ScoreCategory.TOTAL.ordinal()).opponentScore;
+
+            String message;
+            if (myScore > opponentScore) {
+                message = "You win!\nYour score: " + myScore + "\nCPU score: " + opponentScore;
+            } else if (myScore < opponentScore) {
+                message = "You Lose!\nYour score: " + myScore + "\nCPU score: " + opponentScore;
+            } else {
+                message = "Draw!\nYour score: " + myScore + "\nCPU score: " + opponentScore;
+            }
+
+            System.out.println(message);
+        }
+
+        rollButton.setEnabled(false);
+        isTurn = false;
+    }
+
+
+
+
 
     /* Diceクラス */
     private class Dice extends JButton  {
@@ -209,6 +252,7 @@ public class YahtzeePanel extends GamePanel {
             this.setFocusPainted(false);
 
             this.addActionListener(e -> {
+                if (!isTurn) return;
                 toggleLock();
                 repaint();
             });
@@ -349,23 +393,27 @@ public class YahtzeePanel extends GamePanel {
                             entry.myPredictedScore = null;
                             model.clearMyPredictions();
                             model.selectCell(row, col);
-                            model.updateTotal();
+                            model.updateMyTotal();
 
                             table.revalidate();
                             table.repaint();
 
-                            // ロールボタンの更新
-                            rollButton.setEnabled(false);
-                            rollButton.setText("CPU is thinking...");
+                            checkGameEnd();
 
-                            table.setEnabled(false);
+                            if (!isEnd) {
+                                // ロールボタンの更新
+                                rollButton.setEnabled(false);
+                                rollButton.setText("CPU is thinking...");
 
-                            // AIの処理へ移行
-                            new Timer(300, evt -> {
-                                ((Timer) evt.getSource()).stop();
-                                aiMove();
-                                table.setEnabled(true);
-                            }).start();
+                                table.setEnabled(false);
+
+                                // AIの処理へ移行
+                                new Timer(300, evt -> {
+                                    ((Timer) evt.getSource()).stop();
+                                    aiMove();
+                                    table.setEnabled(true);
+                                }).start();
+                            }
                         }
                     }
                 }
@@ -446,7 +494,7 @@ public class YahtzeePanel extends GamePanel {
 
                     // 予測スコアのクリア
                     clearMyPredictions();
-                    updateTotal();
+                    updateMyTotal();
                     fireTableDataChanged();
                     return;
                 }
@@ -491,10 +539,18 @@ public class YahtzeePanel extends GamePanel {
             fireTableDataChanged();
         }
 
-        public void updateTotal() {
+        public void updateMyTotal() {
             getEntry(entries.size() - 1).myScore = entries.stream()
                     .filter(e -> e.myScore != null && e.category != ScoreCategory.TOTAL)
                     .mapToInt(e -> e.myScore)
+                    .sum();
+            fireTableDataChanged();
+        }
+
+        public void updateOpponentTotal() {
+            getEntry(entries.size() - 1).opponentScore = entries.stream()
+                    .filter(e -> e.opponentScore != null && e.category != ScoreCategory.TOTAL)
+                    .mapToInt(e -> e.opponentScore)
                     .sum();
             fireTableDataChanged();
         }
@@ -507,6 +563,18 @@ public class YahtzeePanel extends GamePanel {
 
         public boolean isCellSelected(int row, int col) {
             return selectedCells.contains(new Point(row, col));
+        }
+
+        public boolean isAllMyScoreFilled() {
+            return entries.stream()
+                .filter(e -> e.category != ScoreCategory.TOTAL)
+                .allMatch(e -> e.myScore != null || e.myPredictedScore != null);
+        }
+
+        public boolean isAllOpponentScoreFilled() {
+            return entries.stream()
+                .filter(e -> e.category != ScoreCategory.TOTAL)
+                .allMatch(e -> e.opponentScore != null || e.opponentPredictedScore != null);
         }
 
         public ScoreEntry getEntry(int row) { return entries.get(row); }
