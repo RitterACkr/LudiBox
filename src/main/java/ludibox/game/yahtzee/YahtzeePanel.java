@@ -6,6 +6,7 @@ import ludibox.util.ImageLoader;
 
 import javax.swing.*;
 import javax.swing.Timer;
+import javax.swing.border.Border;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
@@ -23,6 +24,7 @@ public class YahtzeePanel extends GamePanel {
     private final Dice[] dices = new Dice[5];
     private JButton rollButton;
     private ScoreBoardPanel scoreBoardPanel;
+    private JLabel resultLabel;
 
     private final int MAX_ROLL = 3;
     private int rollCount = 0;
@@ -40,7 +42,7 @@ public class YahtzeePanel extends GamePanel {
         this.revalidate();
         this.repaint();
 
-        this.setLayout(null);
+        this.setLayout(new BorderLayout());
         this.setBackground(Color.LIGHT_GRAY);
 
         // 画像の読み込み
@@ -48,16 +50,25 @@ public class YahtzeePanel extends GamePanel {
             diceImages[i] = ImageLoader.loadImage("yahtzee/dice" + (i+1) + ".png");
         }
 
+        // 左パネル
+        JPanel leftPanel = new JPanel();
+        leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
+        leftPanel.setBackground(Color.LIGHT_GRAY);
+
         // サイコロの初期化
+        JPanel dicePanel = new JPanel();
+        dicePanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        dicePanel.setOpaque(false);
+
         for (int i = 0; i < dices.length; i++) {
             Dice d = new Dice(diceImages);
-            d.setBounds(20 + i * 70, 50, 60, 60);
-            this.add(d);
+            d.setPreferredSize(new Dimension(60, 60));
             dices[i] = d;
+            dicePanel.add(d);
         }
 
         rollButton = new JButton("ROLL");
-        rollButton.setBounds(40, 200, 100, 40);
+        rollButton.setPreferredSize(new Dimension(150, 40));
         rollButton.addActionListener(e -> {
             if (rollCount >= MAX_ROLL) return;
 
@@ -78,12 +89,26 @@ public class YahtzeePanel extends GamePanel {
             }).start();
         });
         updateRollButtonLabel();
-        this.add(rollButton);
+
+        resultLabel = new JLabel("");
+        resultLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        resultLabel.setBounds(160, 200, 300, 40);
+
+        leftPanel.add(Box.createVerticalStrut(40));
+        leftPanel.add(dicePanel);
+        leftPanel.add(Box.createVerticalStrut(20));
+        leftPanel.add(rollButton);
+        leftPanel.add(Box.createVerticalStrut(10));
+        leftPanel.add(resultLabel);
 
         scoreBoardPanel = new ScoreBoardPanel();
-        scoreBoardPanel.setBounds(480, 50, 250, 375);
-        this.add(scoreBoardPanel);
+        scoreBoardPanel.setPreferredSize(new Dimension(300, 0));
 
+        JPanel rightPanel = new JPanel(new BorderLayout());
+        rightPanel.add(scoreBoardPanel, BorderLayout.CENTER);
+
+        this.add(leftPanel, BorderLayout.CENTER);
+        this.add(rightPanel, BorderLayout.EAST);
     }
 
     @Override
@@ -102,6 +127,7 @@ public class YahtzeePanel extends GamePanel {
 
     /* AIムーブ */
     private void aiMove() {
+
         isTurn = false;
 
         for (Dice d : dices) {
@@ -146,7 +172,7 @@ public class YahtzeePanel extends GamePanel {
                         model.selectCell(best.ordinal(), 2);
                         model.updateOpponentTotal();
                         scoreBoardPanel.repaint();
-                        checkGameEnd();
+                        if (checkGameEnd()) return;
 
                         if (!isEnd) {
                             // ターンを渡す
@@ -203,7 +229,7 @@ public class YahtzeePanel extends GamePanel {
         return best;
     }
 
-    private void checkGameEnd() {
+    private boolean checkGameEnd() {
         boolean myDone = scoreBoardPanel.getModel().isAllMyScoreFilled();
         boolean opponentDone = scoreBoardPanel.getModel().isAllOpponentScoreFilled();
 
@@ -215,18 +241,20 @@ public class YahtzeePanel extends GamePanel {
 
             String message;
             if (myScore > opponentScore) {
-                message = "You win!\nYour score: " + myScore + "\nCPU score: " + opponentScore;
+                message = "<html>You win!<br>Your score: " + myScore + "<br>CPU score: " + opponentScore + "</html>";
             } else if (myScore < opponentScore) {
-                message = "You Lose!\nYour score: " + myScore + "\nCPU score: " + opponentScore;
+                message = "<html>You Lose!<br>Your score: " + myScore + "<br>CPU score: " + opponentScore + "</html>";
             } else {
-                message = "Draw!\nYour score: " + myScore + "\nCPU score: " + opponentScore;
+                message = "<html>Draw!<br>Your score: " + myScore + "<br>CPU score: " + opponentScore + "</html>";
             }
 
-            System.out.println(message);
+            resultLabel.setText(message);
+            rollButton.setEnabled(false);
+            rollButton.setText("Game End");
+            isTurn = false;
+            return true;
         }
-
-        rollButton.setEnabled(false);
-        isTurn = false;
+        return false;
     }
 
 
@@ -398,7 +426,7 @@ public class YahtzeePanel extends GamePanel {
                             table.revalidate();
                             table.repaint();
 
-                            checkGameEnd();
+                            if (checkGameEnd()) return;
 
                             if (!isEnd) {
                                 // ロールボタンの更新
