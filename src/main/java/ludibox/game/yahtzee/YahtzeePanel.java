@@ -69,6 +69,7 @@ public class YahtzeePanel extends GamePanel {
 
         rollButton = new JButton("ROLL");
         rollButton.setPreferredSize(new Dimension(150, 40));
+        rollButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         rollButton.addActionListener(e -> {
             if (rollCount >= MAX_ROLL) return;
 
@@ -91,21 +92,21 @@ public class YahtzeePanel extends GamePanel {
         updateRollButtonLabel();
 
         resultLabel = new JLabel("");
-        resultLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        resultLabel.setFont(new Font("Arial", Font.BOLD, 20));
         resultLabel.setBounds(160, 200, 300, 40);
+        resultLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
-        leftPanel.add(Box.createVerticalStrut(40));
+        leftPanel.add(Box.createVerticalStrut(100));
         leftPanel.add(dicePanel);
-        leftPanel.add(Box.createVerticalStrut(20));
         leftPanel.add(rollButton);
-        leftPanel.add(Box.createVerticalStrut(10));
-        leftPanel.add(resultLabel);
+        leftPanel.add(Box.createVerticalGlue());
 
         scoreBoardPanel = new ScoreBoardPanel();
         scoreBoardPanel.setPreferredSize(new Dimension(300, 0));
 
         JPanel rightPanel = new JPanel(new BorderLayout());
         rightPanel.add(scoreBoardPanel, BorderLayout.CENTER);
+        rightPanel.add(resultLabel, BorderLayout.SOUTH);
 
         this.add(leftPanel, BorderLayout.CENTER);
         this.add(rightPanel, BorderLayout.EAST);
