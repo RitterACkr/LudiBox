@@ -2,11 +2,12 @@ package ludibox.game.yahtzee;
 
 import ludibox.core.GamePanel;
 import ludibox.core.MainWindow;
+import ludibox.ui.CustomButton;
+import ludibox.ui.CustomButtonStyle;
 import ludibox.util.ImageLoader;
 
 import javax.swing.*;
 import javax.swing.Timer;
-import javax.swing.border.Border;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
@@ -22,14 +23,26 @@ public class YahtzeePanel extends GamePanel {
     private final Image[] diceImages = new Image[6];
 
     private final Dice[] dices = new Dice[5];
-    private JButton rollButton;
+    private CustomButton rollButton;
     private ScoreBoardPanel scoreBoardPanel;
+    private JPanel endPanel;
     private JLabel resultLabel;
 
     private final int MAX_ROLL = 3;
     private int rollCount = 0;
     private boolean isTurn = true;    // True: Player, False: CPU
     private boolean isEnd = false;
+
+    // AI用 - スコア重みづけ
+    private final Map<ScoreCategory, Double> weights = Map.of(
+            ScoreCategory.YAHTZEE, 2.0,
+            ScoreCategory.FULL_HOUSE, 1.2,
+            ScoreCategory.SMALL_STRAIGHT, 1.1,
+            ScoreCategory.LARGE_STRAIGHT, 1.5,
+            ScoreCategory.THREE_OF_A_KIND, 1.0,
+            ScoreCategory.FOUR_OF_A_KIND, 1.0,
+            ScoreCategory.CHANCE, 0.8
+    );
 
     public YahtzeePanel(MainWindow m) {
         super(m);
@@ -67,7 +80,7 @@ public class YahtzeePanel extends GamePanel {
             dicePanel.add(d);
         }
 
-        rollButton = new JButton("ROLL");
+        rollButton = new CustomButton("ROLL", CustomButtonStyle.DARK);
         rollButton.setPreferredSize(new Dimension(150, 40));
         rollButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         rollButton.addActionListener(e -> {
@@ -90,15 +103,30 @@ public class YahtzeePanel extends GamePanel {
             }).start();
         });
         updateRollButtonLabel();
-
+        // リザルト
         resultLabel = new JLabel("");
         resultLabel.setFont(new Font("Arial", Font.BOLD, 20));
         resultLabel.setBounds(160, 200, 300, 40);
         resultLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        // 終了ボタンパネル
+        endPanel = new JPanel();
+        endPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        endPanel.setBackground(Color.LIGHT_GRAY);
+        endPanel.setVisible(false);
+        CustomButton restartButton = new CustomButton("Restart", CustomButtonStyle.DARK);
+        restartButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        restartButton.addActionListener(e -> restartGame());
+        CustomButton mainMenuButton = new CustomButton("Main Menu", CustomButtonStyle.DARK);
+        mainMenuButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        mainMenuButton.addActionListener(e -> quit());
+        endPanel.add(restartButton);
+        endPanel.add(mainMenuButton);
 
         leftPanel.add(Box.createVerticalStrut(100));
         leftPanel.add(dicePanel);
         leftPanel.add(rollButton);
+        leftPanel.add(Box.createVerticalStrut(20));
+        leftPanel.add(endPanel);
         leftPanel.add(Box.createVerticalGlue());
 
         scoreBoardPanel = new ScoreBoardPanel();
@@ -110,6 +138,20 @@ public class YahtzeePanel extends GamePanel {
 
         this.add(leftPanel, BorderLayout.CENTER);
         this.add(rightPanel, BorderLayout.EAST);
+    }
+
+    private void restartGame() {
+        this.removeAll();
+        this.revalidate();
+        this.repaint();
+
+        isTurn = true;
+        isEnd = false;
+        rollCount = 0;
+        resultLabel.setText("");
+        rollButton.setEnabled(true);
+        updateRollButtonLabel();
+        init();
     }
 
     @Override
@@ -196,33 +238,69 @@ public class YahtzeePanel extends GamePanel {
 
     /* ロックする目を選ぶ */
     private Set<Integer> chooseDiceValuesToKeep() {
-        int[] counts = new int[6];
-        for (Dice d : dices) counts[d.getValue() - 1]++;
+        // 現在のスコアボード
+        ScoreBoardModel model = scoreBoardPanel.getModel();
+        // 現在のスコア予測
+        Map<ScoreCategory, Integer> predicted = ScoreCalculator.predict(dices);
 
-        int maxCount =0, target = 1;
-        for (int i = 0; i < 6; i++) {
-            if (counts[i] > maxCount) {
-                maxCount = counts[i];
-                target = i + 1;
+        // 未確定の役のみを評価対象にする
+        List<ScoreCategory> remainingCategories = new ArrayList<>();
+        for (ScoreCategory cate : ScoreCategory.values())
+            if (cate != ScoreCategory.TOTAL && model.getEntry(cate.ordinal()).opponentScore == null)
+                remainingCategories.add(cate);
+
+        // 最もスコアが高い役を見つける
+        ScoreCategory targetCategory = null;
+        int maxScore = -1;
+        for (ScoreCategory cate : remainingCategories) {
+            int score = predicted.getOrDefault(cate, 0);
+            if (score > maxScore) {
+                maxScore = score;
+                targetCategory = cate;
             }
         }
 
         Set<Integer> keep = new HashSet<>();
-        keep.add(target);
+
+        // 選んだカテゴリに応じてロックを変更
+        if (targetCategory != null) {
+            switch (targetCategory) {
+                case FULL_HOUSE, THREE_OF_A_KIND, FOUR_OF_A_KIND, YAHTZEE -> {
+                    // 最頻値をロック
+                    int[] counts = new int[6];
+                    for (Dice d : dices) counts[d.getValue() - 1]++;
+                    int target = 1;
+                    for (int i = 0; i < 6; i++) if (counts[i] > counts[target - 1]) target = i + 1;
+                    keep.add(target);
+                }
+                case SMALL_STRAIGHT, LARGE_STRAIGHT -> {
+                    // ストレートに必要な目だけロック
+                    List<Integer> straightNumbers = Arrays.asList(1, 2, 3, 4, 5, 6);
+                    for (Dice d : dices) if (straightNumbers.contains(d.getValue())) keep.add(d.getValue());
+                }
+                default -> {    // CHANCE
+                    // 出目が大きいダイスをロック
+                    for (Dice d : dices) if (d.getValue() >= 5) keep.add(d.getValue());
+                }
+            }
+        }
         return keep;
     }
 
     /* 最善手の選択 */
     private ScoreCategory selectBestCategory(Map<ScoreCategory, Integer> predicted) {
-        int max = -1;
+        double max = -1;
         ScoreCategory best = null;
         for (Map.Entry<ScoreCategory, Integer> entry : predicted.entrySet()) {
             if (entry.getKey() == ScoreCategory.TOTAL) continue;
 
             ScoreEntry e = scoreBoardPanel.getModel().getEntry(entry.getKey().ordinal());
             if (e.opponentScore == null) {
-                if (entry.getValue() > max) {
-                    max = entry.getValue();
+                double weight = weights.getOrDefault(entry.getKey(), 1.0);
+                double score = entry.getValue() * weight;
+
+                if (score > max) {
+                    max = score;
                     best = entry.getKey();
                 }
             }
@@ -251,6 +329,9 @@ public class YahtzeePanel extends GamePanel {
 
             resultLabel.setText(message);
             rollButton.setEnabled(false);
+
+            endPanel.setVisible(true);
+
             rollButton.setText("Game End");
             isTurn = false;
             return true;
@@ -369,6 +450,7 @@ public class YahtzeePanel extends GamePanel {
             table.setRowSelectionAllowed(false);
             table.setColumnSelectionAllowed(false);
             table.setCellSelectionEnabled(false);
+            table.getColumnModel().getColumn(0).setPreferredWidth(120);
 
             for (int i = 0; i < table.getColumnCount(); i++) {
                 final int col = i;
@@ -384,6 +466,7 @@ public class YahtzeePanel extends GamePanel {
                         c.setFont(new Font("Arial", Font.BOLD, 14));
 
                         // 背景色 & 文字色
+                        // 列ごとの設定
                         if (col == 1) {
                             if (model.isCellSelected(row, column)) {
                                 c.setBackground(Color.RED);
@@ -401,9 +484,14 @@ public class YahtzeePanel extends GamePanel {
                                 c.setForeground(new Color(120, 120, 120));
                             }
                         } else {
-                            c.setBackground(Color.WHITE);
+                            if (row == ScoreCategory.BONUS.ordinal() || row == ScoreCategory.TOTAL.ordinal()) {
+                                c.setBackground(Color.LIGHT_GRAY);
+                            } else {
+                                c.setBackground(Color.WHITE);
+                            }
                             c.setForeground(Color.BLACK);
                         }
+
                         return c;
                     }
                 });
@@ -415,7 +503,7 @@ public class YahtzeePanel extends GamePanel {
                     int row = table.rowAtPoint(e.getPoint());
                     int col = table.columnAtPoint(e.getPoint());
 
-                    if (row < ScoreCategory.TOTAL.ordinal() && 1 <= col) {
+                    if (row < ScoreCategory.TOTAL.ordinal() && row != ScoreCategory.BONUS.ordinal() && 1 <= col) {
                         ScoreEntry entry = model.getEntry(row);
                         if (entry.myScore == null && entry.myPredictedScore != null) {
                             entry.myScore = entry.myPredictedScore;
@@ -461,7 +549,7 @@ public class YahtzeePanel extends GamePanel {
         ONES("Ones"), TWOS("Twos"), THREES("Threes"), FOURS("Fours"), FIVES("Fives"), SIXES("Sixes"),
         THREE_OF_A_KIND("3 of a Kind"), FOUR_OF_A_KIND("4 of a Kind"), FULL_HOUSE("Full House"),
         SMALL_STRAIGHT("Small Straight"), LARGE_STRAIGHT("Large Straight"), YAHTZEE("Yahtzee"), CHANCE("Chance"),
-        TOTAL("Total");
+        BONUS("Bonus"), TOTAL("Total");
 
         public final String label;
         ScoreCategory(String label) {
@@ -569,18 +657,42 @@ public class YahtzeePanel extends GamePanel {
         }
 
         public void updateMyTotal() {
-            getEntry(entries.size() - 1).myScore = entries.stream()
-                    .filter(e -> e.myScore != null && e.category != ScoreCategory.TOTAL)
-                    .mapToInt(e -> e.myScore)
-                    .sum();
+            int upperSum = 0, lowerSum = 0;
+
+            for (ScoreEntry e : entries) {
+                if (e.myScore != null) {
+                    if (e.category.ordinal() <= ScoreCategory.SIXES.ordinal()) upperSum += e.myScore;
+                    else if (e.category != ScoreCategory.BONUS && e.category != ScoreCategory.TOTAL) lowerSum += e.myScore;
+                }
+            }
+
+            // BONUS計算
+            ScoreEntry bonusEntry = getEntry(ScoreCategory.BONUS.ordinal());
+            bonusEntry.myScore = (upperSum >= 63) ? 35 : 0;
+
+            // TOTAL更新
+            getEntry(ScoreCategory.TOTAL.ordinal()).myScore = upperSum + lowerSum + bonusEntry.myScore;
+
             fireTableDataChanged();
         }
 
         public void updateOpponentTotal() {
-            getEntry(entries.size() - 1).opponentScore = entries.stream()
-                    .filter(e -> e.opponentScore != null && e.category != ScoreCategory.TOTAL)
-                    .mapToInt(e -> e.opponentScore)
-                    .sum();
+            int upperSum = 0, lowerSum = 0;
+
+            for (ScoreEntry e : entries) {
+                if (e.opponentScore != null) {
+                    if (e.category.ordinal() <= ScoreCategory.SIXES.ordinal()) upperSum += e.opponentScore;
+                    else if (e.category != ScoreCategory.BONUS && e.category != ScoreCategory.TOTAL) lowerSum += e.opponentScore;
+                }
+            }
+
+            // BONUS計算
+            ScoreEntry bonusEntry = getEntry(ScoreCategory.BONUS.ordinal());
+            bonusEntry.opponentScore = (upperSum >= 63) ? 35 : 0;
+
+            // TOTAL更新
+            getEntry(ScoreCategory.TOTAL.ordinal()).opponentScore = upperSum + lowerSum + bonusEntry.opponentScore;
+
             fireTableDataChanged();
         }
 
