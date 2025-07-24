@@ -1,5 +1,6 @@
 package ludibox.core;
 
+import ludibox.game.breakout.BreakoutPanel;
 import ludibox.game.snakegame.SnakeGamePanel;
 import ludibox.game.tictactoe.TicTacToePanel;
 import ludibox.game.tictactoe.TicTacToeSetupPanel;
@@ -15,6 +16,7 @@ public class GameFactory {
             }
             case SNAKE_GAME -> new SnakeGamePanel(window);
             case YAHTZEE -> new YahtzeePanel(window);
+            case BREAKOUT -> new BreakoutPanel(window);
         };
     }
 
@@ -23,6 +25,7 @@ public class GameFactory {
             case TIC_TAC_TOE -> new TicTacToeSetupPanel();
             case SNAKE_GAME -> null;
             case YAHTZEE -> null;
+            case BREAKOUT -> null;
         };
     }
 }
