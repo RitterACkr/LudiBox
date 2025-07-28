@@ -15,6 +15,13 @@ public class BreakoutPanel extends GamePanel {
     private JLabel levelLabel;
     private CustomButton menuButton;
 
+    // パドル
+    private int paddleWidth = 100;
+    private int paddleHeight = 10;
+
+    private int paddleX;
+    private int paddleY;
+
     public BreakoutPanel(MainWindow m) {
         super(m);
 
@@ -45,11 +52,20 @@ public class BreakoutPanel extends GamePanel {
         topPanel.add(menuButton);
 
         this.add(topPanel, BorderLayout.NORTH);
+
+        // パドル初期位置
+        paddleX = window.getWidth() / 2 - paddleWidth / 2;
+        paddleY = window.getHeight() - 60;
     }
 
     // ラベルの作成
     private JLabel createLabel(String text) {
-
+        JLabel label = new JLabel(text, SwingConstants.CENTER);
+        label.setOpaque(true);
+        label.setBackground(Color.BLACK);
+        label.setForeground(Color.WHITE);
+        label.setFont(new Font("SansSerif", Font.BOLD, 16));
+        return label;
     }
 
     @Override
@@ -64,5 +80,9 @@ public class BreakoutPanel extends GamePanel {
         g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.BOLD, 16));
         g.drawString("SCORE: 0, LIVES: 3, LEVEL: 1", 10, 25);
+
+        // パドル描画
+        g.setColor(Color.GREEN);
+        g.fillRect(paddleX, paddleY, paddleWidth, paddleHeight);
     }
 }
