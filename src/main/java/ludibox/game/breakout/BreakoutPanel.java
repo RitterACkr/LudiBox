@@ -7,11 +7,13 @@ import ludibox.ui.CustomButtonStyle;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
 
 public class BreakoutPanel extends GamePanel implements MouseMotionListener {
 
+    // UI関連
     private int width, height;
 
     private JLabel scoreLabel;
@@ -22,9 +24,12 @@ public class BreakoutPanel extends GamePanel implements MouseMotionListener {
     // パドル
     private int paddleWidth = 100;
     private int paddleHeight = 10;
-
     private int paddleX;
     private int paddleY;
+
+    // ステータス
+    private boolean isRunning = false;
+    private Timer timer;
 
     public BreakoutPanel(MainWindow m) {
         super(m);
@@ -32,6 +37,12 @@ public class BreakoutPanel extends GamePanel implements MouseMotionListener {
         init();
 
         this.addMouseMotionListener(this);
+        this.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (!isRunning) isRunning = true;
+            }
+        });
     }
 
     /* 初期化処理 */
@@ -65,6 +76,15 @@ public class BreakoutPanel extends GamePanel implements MouseMotionListener {
         // パドル初期位置
         paddleX = width / 2 - paddleWidth / 2;
         paddleY = height - 60;
+
+        // タイマー初期化
+        timer = new Timer(16, e -> {
+            if (isRunning) {
+                update();
+                repaint();
+            }
+        });
+        timer.start();
     }
 
     // ラベルの作成
@@ -75,6 +95,10 @@ public class BreakoutPanel extends GamePanel implements MouseMotionListener {
         label.setForeground(Color.WHITE);
         label.setFont(new Font("SansSerif", Font.BOLD, 16));
         return label;
+    }
+
+    private void update() {
+
     }
 
     @Override
@@ -104,6 +128,8 @@ public class BreakoutPanel extends GamePanel implements MouseMotionListener {
         paddleX = e.getX() - paddleWidth / 2;
 
         if (paddleX < 0) paddleX = 0;
-        //if (paddleX > )
+        if (paddleX > width - paddleWidth) paddleX = width - paddleWidth;
+
+        repaint();
     }
 }
