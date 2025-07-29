@@ -7,8 +7,12 @@ import ludibox.ui.CustomButtonStyle;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionListener;
 
-public class BreakoutPanel extends GamePanel {
+public class BreakoutPanel extends GamePanel implements MouseMotionListener {
+
+    private int width, height;
 
     private JLabel scoreLabel;
     private JLabel livesLabel;
@@ -26,11 +30,16 @@ public class BreakoutPanel extends GamePanel {
         super(m);
 
         init();
+
+        this.addMouseMotionListener(this);
     }
 
     /* 初期化処理 */
     private void init() {
-        this.setPreferredSize(new Dimension(window.getWidth(), window.getHeight()));
+        width = window.getWidth();
+        height = window.getHeight();
+
+        this.setPreferredSize(new Dimension(width, height));
         this.setLayout(new BorderLayout());
 
         // 上部UI Panel
@@ -42,7 +51,7 @@ public class BreakoutPanel extends GamePanel {
 
         // Menu Button
         menuButton = new CustomButton("Menu", CustomButtonStyle.SIMPLE);
-        menuButton.setBounds(window.getWidth() - 120, 10, 80, 30);
+        menuButton.setBounds(width - 120, 10, 80, 30);
         menuButton.addActionListener(e -> System.out.println("Menu button clicked"));
         this.add(menuButton);
 
@@ -54,8 +63,8 @@ public class BreakoutPanel extends GamePanel {
         this.add(topPanel, BorderLayout.NORTH);
 
         // パドル初期位置
-        paddleX = window.getWidth() / 2 - paddleWidth / 2;
-        paddleY = window.getHeight() - 60;
+        paddleX = width / 2 - paddleWidth / 2;
+        paddleY = height - 60;
     }
 
     // ラベルの作成
@@ -84,5 +93,17 @@ public class BreakoutPanel extends GamePanel {
         // パドル描画
         g.setColor(Color.GREEN);
         g.fillRect(paddleX, paddleY, paddleWidth, paddleHeight);
+    }
+
+    @Override
+    public void mouseDragged(MouseEvent e) { }
+
+    @Override
+    public void mouseMoved(MouseEvent e) {
+        // パドルの中央をマウスに合わせる
+        paddleX = e.getX() - paddleWidth / 2;
+
+        if (paddleX < 0) paddleX = 0;
+        //if (paddleX > )
     }
 }
