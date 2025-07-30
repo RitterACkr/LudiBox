@@ -22,10 +22,14 @@ public class BreakoutPanel extends GamePanel implements MouseMotionListener {
     private CustomButton menuButton;
 
     // パドル
-    private int paddleWidth = 100;
-    private int paddleHeight = 10;
-    private int paddleX;
-    private int paddleY;
+    private int paddleWidth = 100, paddleHeight = 10;
+    private int paddleX, paddleY;
+
+    // ボール
+    private int ballX, ballY;
+    private int ballSize = 10;
+    private int ballDx = 4, ballDy = -4;
+
 
     // ステータス
     private boolean isRunning = false;
@@ -76,6 +80,10 @@ public class BreakoutPanel extends GamePanel implements MouseMotionListener {
         // パドル初期位置
         paddleX = width / 2 - paddleWidth / 2;
         paddleY = height - 60;
+
+        // ボール初期位置
+        ballX = paddleX + paddleWidth / 2 - ballSize / 2;
+        ballY = paddleY - ballSize;
 
         // タイマー初期化
         timer = new Timer(16, e -> {
