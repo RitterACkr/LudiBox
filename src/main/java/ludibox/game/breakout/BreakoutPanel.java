@@ -125,6 +125,10 @@ public class BreakoutPanel extends GamePanel implements MouseMotionListener {
         // パドル描画
         g.setColor(Color.GREEN);
         g.fillRect(paddleX, paddleY, paddleWidth, paddleHeight);
+
+        // ボール描画
+        g.setColor(Color.WHITE);
+        g.fillOval(ballX, ballY, ballSize, ballSize);
     }
 
     @Override
@@ -137,6 +141,9 @@ public class BreakoutPanel extends GamePanel implements MouseMotionListener {
 
         if (paddleX < 0) paddleX = 0;
         if (paddleX > width - paddleWidth) paddleX = width - paddleWidth;
+
+        // ゲームスタート前はボールをパドル上部に固定
+        if (!isRunning) ballX = paddleX + paddleWidth / 2 - ballSize / 2;
 
         repaint();
     }
