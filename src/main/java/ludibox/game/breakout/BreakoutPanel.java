@@ -106,7 +106,19 @@ public class BreakoutPanel extends GamePanel implements MouseMotionListener {
     }
 
     private void update() {
+        // ボール移動
+        ballX += ballDx; ballY += ballDy;
 
+        // 壁との反射
+        if (ballX < 0 || ballX > width - ballSize * 2) ballDx = -ballDx;
+        if (ballY < 40) ballDy = -ballDy;
+
+        // 画面下で停止
+        if (ballY > height - ballSize) {
+            isRunning = false;
+            ballX = paddleX + paddleWidth / 2 - ballSize / 2;
+            ballY = paddleY - ballSize;
+        }
     }
 
     @Override
