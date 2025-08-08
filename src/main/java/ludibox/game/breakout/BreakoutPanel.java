@@ -10,6 +10,12 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 public class BreakoutPanel extends GamePanel implements MouseMotionListener {
 
@@ -21,13 +27,16 @@ public class BreakoutPanel extends GamePanel implements MouseMotionListener {
     private JLabel levelLabel;
     private CustomButton menuButton;
 
+    // マップ
+    private int[][] currentMap;
+
     // パドル
     private int paddleWidth = 100, paddleHeight = 10;
     private int paddleX, paddleY;
 
     // ボール
     private int ballX, ballY;
-    private int ballSize = 10;
+    private int ballSize = 12;
     private int ballDx = 4, ballDy = -4;
 
 
@@ -37,6 +46,8 @@ public class BreakoutPanel extends GamePanel implements MouseMotionListener {
 
     public BreakoutPanel(MainWindow m) {
         super(m);
+
+        currentMap = loadLevelFromFile("breakout/levels.csv", 1);
 
         init();
 
@@ -119,6 +130,62 @@ public class BreakoutPanel extends GamePanel implements MouseMotionListener {
             ballX = paddleX + paddleWidth / 2 - ballSize / 2;
             ballY = paddleY - ballSize;
         }
+
+        // パドルとの衝突
+        Rectangle ballRect = new Rectangle(ballX, ballY, ballSize, ballSize);
+        Rectangle paddleRect = new Rectangle(paddleX, paddleY, paddleWidth, paddleHeight);
+
+        if (ballRect.intersects(paddleRect)) {
+            ballY = paddleY - ballSize;
+            ballDy = -ballDy;
+        }
+    }
+
+    // 指定されたレベルのブロック情報を読み込む
+    private int[][] loadLevelFromFile(String fileName, int targetLevel) {
+        List<int[]> currentLevel = new ArrayList<>();
+        boolean inTargetLevel = false;  // レベル読み込み用のフラグ
+        int currentLevelNum = 0;       // 現在参照中のレベル
+
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(
+                Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream(fileName))
+        ))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                line = line.trim();
+                // 空行はスキップ
+                if (line.isEmpty()) continue;
+
+                // #LEVEL行の処理
+                if (line.startsWith("#LEVEL")) {
+                    currentLevelNum++;
+                    inTargetLevel = (currentLevelNum == targetLevel);
+                    continue;
+                }
+
+                // targetLevelと一致するなら内容を保存
+                if (inTargetLevel) {
+                    String[] tokens = line.split(",");
+                    int[] row = new int[tokens.length];
+                    for (int i = 0; i < tokens.length; i++)
+                        row[i] = Integer.parseInt(tokens[i].trim());
+                    currentLevel.add(row);
+                } else if (currentLevelNum > targetLevel) {
+                    // 既に読み込んだレベルより後のレベルは無視
+                    break;
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading level file: " + fileName);
+            e.printStackTrace();
+        }
+
+        if (currentLevel.isEmpty()) {
+            System.err.println("No data found for level: LEVEL " + targetLevel);
+            return new int[0][0];
+        }
+
+        return currentLevel.toArray(new int[0][]);
     }
 
     @Override
@@ -141,6 +208,25 @@ public class BreakoutPanel extends GamePanel implements MouseMotionListener {
         // ボール描画
         g.setColor(Color.WHITE);
         g.fillOval(ballX, ballY, ballSize, ballSize);
+
+        // ブロック描画
+        if (currentMap != null) {
+            int blockRows = currentMap.length;
+            int blockCols = currentMap[0].length;
+            int blockWidth = width / blockCols;
+            int blockHeight = 20;
+
+            g.setColor(Color.CYAN);
+            for (int row = 0; row < blockRows; row++) {
+                for (int col = 0; col < blockCols; col++) {
+                    if (currentMap[row][col] != 0) {
+                        int x = col * blockWidth;
+                        int y = 60 + row * blockHeight;
+                        g.fillRect(x + 1, y + 1, blockWidth - 2, blockHeight - 2);
+                    }
+                }
+            }
+        }
     }
 
     @Override
