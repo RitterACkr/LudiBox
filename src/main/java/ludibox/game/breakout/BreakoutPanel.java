@@ -37,7 +37,7 @@ public class BreakoutPanel extends GamePanel implements MouseMotionListener {
     // ボール
     private int ballX, ballY;
     private int ballSize = 12;
-    private int ballDx = 4, ballDy = -4;
+    private int ballDx = 4, ballDy = -8;
 
 
     // ステータス
@@ -136,7 +136,18 @@ public class BreakoutPanel extends GamePanel implements MouseMotionListener {
         Rectangle paddleRect = new Rectangle(paddleX, paddleY, paddleWidth, paddleHeight);
 
         if (ballRect.intersects(paddleRect)) {
-            ballY = paddleY - ballSize;
+            ballY = paddleY - ballSize; // パドル上に戻す
+
+            // パドル中心とボール中心の差から反射角度の調整
+            int paddleCenter = paddleX + paddleWidth / 2;
+            int ballCenter = ballX + ballSize / 2;
+            int diff = ballCenter - paddleCenter;
+
+            // 最大反射速度
+            int maxDx = 12;
+            ballDx = (int) ((double) diff / (paddleWidth / 2) * maxDx);
+
+            // 上方向に返す
             ballDy = -ballDy;
         }
     }
