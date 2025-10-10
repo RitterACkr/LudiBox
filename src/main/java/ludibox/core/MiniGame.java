@@ -4,7 +4,7 @@ public enum MiniGame {
     TIC_TAC_TOE("Tic Tac Toe", 1, "tic_tac_toe.png"),
     SNAKE_GAME("Snake Game", 2, "snake_game.png"),
     YAHTZEE("Yahtzee", 3, "yahtzee.png"),
-    BREAKOUT("Breakout", 4, "breakout.png");
+    FOUR_IN_A_ROW("4 in a Row", 4, "four_in_a_row.png");
 
     private final String name;
     private final int id;

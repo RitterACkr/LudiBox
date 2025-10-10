@@ -1,6 +1,6 @@
 package ludibox.core;
 
-import ludibox.game.breakout.BreakoutPanel;
+import ludibox.game.fourinarow.FourInARowPanel;
 import ludibox.game.snakegame.SnakeGamePanel;
 import ludibox.game.tictactoe.TicTacToePanel;
 import ludibox.game.tictactoe.TicTacToeSetupPanel;
@@ -12,11 +12,12 @@ public class GameFactory {
         return switch (game) {
             case TIC_TAC_TOE -> {
                 int level = ((TicTacToeSetupPanel) setup).getLevel();
-                yield new TicTacToePanel(window, level);
+                boolean isVsAi = ((TicTacToeSetupPanel) setup).isVsAiMode();
+                yield new TicTacToePanel(window, isVsAi, level);
             }
             case SNAKE_GAME -> new SnakeGamePanel(window);
             case YAHTZEE -> new YahtzeePanel(window);
-            case BREAKOUT -> new BreakoutPanel(window);
+            case FOUR_IN_A_ROW -> new FourInARowPanel(window);
         };
     }
 
@@ -25,7 +26,7 @@ public class GameFactory {
             case TIC_TAC_TOE -> new TicTacToeSetupPanel();
             case SNAKE_GAME -> null;
             case YAHTZEE -> null;
-            case BREAKOUT -> null;
+            case FOUR_IN_A_ROW -> null;
         };
     }
 }

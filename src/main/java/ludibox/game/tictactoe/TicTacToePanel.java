@@ -15,17 +15,18 @@ import java.util.Random;
 
 public class TicTacToePanel extends GamePanel {
 
-    private final int GRID_SIZE = 3; // 盤面のサイズ (3x3)
-    private CellButton[][] cells = new CellButton[GRID_SIZE][GRID_SIZE];    // セル情報
-    private boolean isEnd = false; // ゲーム終了フラグ
-    // True: O (Player), False: X (AI)
-    private boolean turn = true;
-
     // UI系
+    private final int GRID_SIZE = 3; // 盤面のサイズ (3x3)
     private OverlayPanel overlayPanel;  // オーバーレイパネル
     private JLabel infoLabel;           // 情報表示用ラベル
     private JPanel bottomButtonPanel;   // ボタンパネル
     private Vec2[] drawPoints = new Vec2[2];    // 勝利時に表示するラインの始点と終点
+
+    // State
+    private CellButton[][] cells = new CellButton[GRID_SIZE][GRID_SIZE];    // セル情報
+    private boolean isEnd = false;  // ゲーム終了フラグ
+    private boolean turn = true;    // True: O (Player), False: X (AI)
+    private GameMode gamemode;
 
     // AIレベル
     public enum AILevel {
@@ -41,16 +42,17 @@ public class TicTacToePanel extends GamePanel {
     };
 
 
-    public TicTacToePanel(MainWindow m, int level) {
-        this(m);
+    public TicTacToePanel(MainWindow m, boolean mode, int level) {
+        this(m, mode);
         switch (level) {
             case 0 -> aiLevel = AILevel.RANDOM;
             case 1 -> aiLevel = AILevel.BASIC;
             case 2 -> aiLevel = AILevel.MINIMAX;
         }
     }
-    public TicTacToePanel(MainWindow m) {
+    public TicTacToePanel(MainWindow m, boolean mode) {
         super(m);
+        this.gamemode = mode ? GameMode.VS_AI : GameMode.TWO_PLAYER;
         this.setLayout(new BorderLayout());
         init();
     }
@@ -76,9 +78,12 @@ public class TicTacToePanel extends GamePanel {
 
         // ターン決め
         turn = new Random().nextBoolean();
-        infoLabel.setText("Turn: " + (turn ? "O (YOU)" : "X (AI)"));
-
-        if (!turn) scheduleAiMove();
+        if (gamemode == GameMode.VS_AI) {
+            infoLabel.setText("Turn: " + (turn ? "O (YOU)" : "X (AI)"));
+            if (!turn) scheduleAiMove();
+        } else {
+            infoLabel.setText("Turn: " + (turn ? "O (Player1)" : "X (Player2)"));
+        }
     }
 
     /* ゲームの終了判定 */
@@ -134,17 +139,20 @@ public class TicTacToePanel extends GamePanel {
     /* ターン変更処理 & AIの処理 */
     private void changeTurn() {
         turn = !turn;
-        infoLabel.setText("Turn: " + (turn ? "O" : "X"));
+        if (gamemode == GameMode.VS_AI) infoLabel.setText("Turn: " + (turn ? "O (YOU)" : "X (AI)"));
+        else infoLabel.setText("Turn: " + (turn ? "O (Player1)" : "X (Player2)"));
 
-        if (!turn && !checkFull()) scheduleAiMove();
+        if (!turn && !checkFull() && gamemode == GameMode.VS_AI) scheduleAiMove();
     }
 
     /* どちらかの勝利時の終了処理 */
     private void winGame() {
-        System.out.println("NG");
         isEnd = true;
 
         overlayPanel.setOnAnimationEnd(() -> {
+            String winner;
+            if (gamemode == GameMode.VS_AI) winner = turn ? "O (YOU)" : "X (AI)";
+            else winner = turn ? "O (Player1)" : "X (Player2)";
             // 勝者のテキスト表示
             infoLabel.setText((turn ? "O" : "X") + " wins!");
             // ボタンパネルの表示
@@ -453,7 +461,8 @@ public class TicTacToePanel extends GamePanel {
         }
 
         private void click() {
-            if (isSelected || isEnd || !turn) return;
+            if (isSelected || isEnd) return;
+            if (gamemode == GameMode.VS_AI && !turn) return;
 
             this.setForeground(turn ? Color.RED : Color.BLUE);
             this.setText(turn ? "O" : "X");
@@ -464,6 +473,8 @@ public class TicTacToePanel extends GamePanel {
         }
 
         private void aiClick() {
+            if (gamemode != GameMode.VS_AI) return;
+
             this.setForeground(turn ? Color.RED : Color.BLUE);
             this.setText(turn ? "O" : "X");
             this.setBackground(turn ? new Color(255, 200, 200) : new Color(200, 200, 255));
@@ -543,5 +554,10 @@ public class TicTacToePanel extends GamePanel {
             }
             repaint();
         }
+    }
+
+    private enum GameMode {
+        VS_AI,
+        TWO_PLAYER
     }
 }
