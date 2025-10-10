@@ -133,11 +133,6 @@ public class TicTacToeSetupPanel implements GameSetupPanel {
         levelPanel.add(buttons);
     }
 
-    private void setAiLevelVisible(boolean visible) {
-        comboBox.setEnabled(visible);
-        comboBox.setVisible(visible);
-    }
-
     public boolean isVsAiMode() {
         return isVsAiMode;
     }
