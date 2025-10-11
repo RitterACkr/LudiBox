@@ -4,6 +4,8 @@ import ludibox.core.GamePanel;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.geom.Area;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.RoundRectangle2D;
@@ -20,6 +22,7 @@ public class FourInARowPanel extends GamePanel {
     // -- State --
     // 0: empty, 1: red, 2: yellow
     private final int[][] board = new int[ROWS][COLS];
+    private int turn = 1;
 
     // -- UI --
     private JPanel boardPanel;
@@ -32,11 +35,36 @@ public class FourInARowPanel extends GamePanel {
         this.setLayout(new BorderLayout());
         this.setBackground(Color.LIGHT_GRAY);
 
+        this.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                handleClick(e.getX(), e.getY());
+            }
+        });
+    }
 
+    // クリック処理
+    private void handleClick(int x, int y) {
+        int boardWidth = COLS * CELL_SIZE;
+        int x0 = (getWidth() - boardWidth) / 2;
+        int arrowTop = getHeight() - (ROWS * CELL_SIZE) - ARROW_HEIGHT - 20;
 
-        // テスト
-        board[5][3] = 1;
-        board[4][3] = 2;
+        if (y >= arrowTop && y <= arrowTop + ARROW_HEIGHT) {
+            int col = (x - x0) / CELL_SIZE;
+            if (col >= 0 && col < COLS) dropPiece(col);
+        }
+    }
+
+    // 駒の落下
+    private void dropPiece(int col) {
+        for (int r = ROWS - 1; r >= 0; r--) {
+            if (board[r][col] == 0) {
+                board[r][col] = turn;
+                turn = (turn == 1) ? 2 : 1;
+                repaint();
+                break;
+            }
+        }
     }
 
     @Override
@@ -51,6 +79,19 @@ public class FourInARowPanel extends GamePanel {
         // centered
         int x0 = (getWidth() - boardWidth) / 2;
         int y0 = getHeight() - boardHeight - 10;
+
+        // arrows
+        int arrowTop = y0 - ARROW_HEIGHT - 5;
+
+        for (int c = 0; c < COLS; c++) {
+            int cx = x0 + c * CELL_SIZE + CELL_SIZE / 2;
+            Polygon triangle = new Polygon();
+            triangle.addPoint(cx, arrowTop + ARROW_HEIGHT);
+            triangle.addPoint(cx - 15, arrowTop + 10);
+            triangle.addPoint(cx + 15, arrowTop + 10);
+            g2d.setColor(new Color(50, 50, 50, 180));
+            g2d.fill(triangle);
+        }
 
         // pieces
         for (int r = 0; r < ROWS; r++) {
