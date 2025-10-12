@@ -30,17 +30,35 @@ public class FourInARowPanel extends GamePanel {
     private Color PIECE_RED = new Color(220, 20, 60);
     private Color PIECE_YELLOW = new Color(255, 215, 0);
 
+    private int hoverCol = -1;
+
+
     public FourInARowPanel(ludibox.core.MainWindow m) {
         super(m);
         this.setLayout(new BorderLayout());
         this.setBackground(Color.LIGHT_GRAY);
 
-        this.addMouseListener(new MouseAdapter() {
+        // マウス操作
+        MouseAdapter mouseAdapter = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
                 handleClick(e.getX(), e.getY());
             }
-        });
+
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                handleHover(e.getX(), e.getY());
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                hoverCol = -1;
+                repaint();
+            }
+        };
+
+        this.addMouseListener(mouseAdapter);
+        this.addMouseMotionListener(mouseAdapter);
     }
 
     // クリック処理
@@ -52,6 +70,30 @@ public class FourInARowPanel extends GamePanel {
         if (y >= arrowTop && y <= arrowTop + ARROW_HEIGHT) {
             int col = (x - x0) / CELL_SIZE;
             if (col >= 0 && col < COLS) dropPiece(col);
+        }
+    }
+
+    // ホバー処理
+    private void handleHover(int x, int y) {
+        int boardWidth = COLS * CELL_SIZE;
+        int x0 = (getWidth() - boardWidth) / 2;
+        int y0 = getHeight() - ROWS * CELL_SIZE - 20;
+        int arrowTop = y0 - ARROW_HEIGHT - 5;
+
+        if (y >= arrowTop && y <= arrowTop + ARROW_HEIGHT) {
+            int col = (x - x0) / CELL_SIZE;
+            if (col >= 0 && col < COLS) {
+                if (hoverCol != col) {
+                    hoverCol = col;
+                    repaint();
+                }
+                return;
+            }
+        }
+
+        if (hoverCol != -1) {
+            hoverCol = -1;
+            repaint();
         }
     }
 
@@ -81,7 +123,7 @@ public class FourInARowPanel extends GamePanel {
         int y0 = getHeight() - boardHeight - 10;
 
         // arrows
-        int arrowTop = y0 - ARROW_HEIGHT - 5;
+        int arrowTop = y0 - ARROW_HEIGHT - 10;
 
         for (int c = 0; c < COLS; c++) {
             int cx = x0 + c * CELL_SIZE + CELL_SIZE / 2;
@@ -89,7 +131,10 @@ public class FourInARowPanel extends GamePanel {
             triangle.addPoint(cx, arrowTop + ARROW_HEIGHT);
             triangle.addPoint(cx - 15, arrowTop + 10);
             triangle.addPoint(cx + 15, arrowTop + 10);
-            g2d.setColor(new Color(50, 50, 50, 180));
+
+            if (c == hoverCol) g2d.setColor(new Color(100, 180, 255));
+            else g2d.setColor(new Color(60, 60, 60, 160));
+
             g2d.fill(triangle);
         }
 
