@@ -24,18 +24,16 @@ public class FourInARowPanel extends GamePanel {
     // 0: empty, 1: red, 2: yellow
     private final int[][] board = new int[ROWS][COLS];
     private int turn = 1;
+    private boolean isFinish = false;
 
     // -- Animation --
     private boolean isAnimating = false;
-    private int fallingCol = -1;
-    private int fallingRow = -1;
+    private int fallingCol = -1, fallingRow = -1;
     private int fallingY;
     private int fallingPieceColor;
     private Timer dropTimer;
 
     // -- UI --
-    private JPanel boardPanel;
-
     private Color PIECE_RED = new Color(220, 20, 60);
     private Color PIECE_YELLOW = new Color(255, 215, 0);
 
@@ -53,7 +51,7 @@ public class FourInARowPanel extends GamePanel {
         MouseAdapter mouseAdapter = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                if (!isAnimating) handleClick(e.getX(), e.getY());
+                if (!isAnimating && !isFinish) handleClick(e.getX(), e.getY());
             }
 
             @Override
@@ -132,9 +130,9 @@ public class FourInARowPanel extends GamePanel {
         // タイマー
         dropTimer = new Timer(12, e -> {
             fallingY += DROP_SPEED;
-            int destY = y0 + fallingRow * CELL_SIZE + MARGIN;
-            if (fallingY >= destY) {
-                fallingY = destY;
+            int dy = y0 + fallingRow * CELL_SIZE + MARGIN;
+            if (fallingY >= dy) {
+                fallingY = dy;
                 finishDrop();
             }
             repaint();
@@ -142,13 +140,59 @@ public class FourInARowPanel extends GamePanel {
         dropTimer.start();
     }
 
-    // 落下の完了
+    // 落下の完了 & 勝敗判定
     private void finishDrop() {
         dropTimer.stop();
         board[fallingRow][fallingCol] = fallingPieceColor;
+
+        // 勝敗チェック
+        if (checkWin(fallingRow, fallingCol)) {
+            isFinish = true;
+            repaint();
+            SwingUtilities.invokeLater(() -> {
+                String color = (fallingPieceColor == 1) ? "Red" : "Yellow";
+                JOptionPane.showMessageDialog(this, color + " wins!", "Game Over", JOptionPane.INFORMATION_MESSAGE);
+            });
+            return;
+        }
+
         turn = (turn == 1 ) ? 2 : 1;
         isAnimating = false;
         repaint();
+    }
+
+    // 勝敗判定
+    private boolean checkWin(int row, int col) {
+        int color = board[row][col];
+        if (color == 0) return false;
+
+        int[][] dirs = {
+            {1, 0},     // 横
+            {0, 1},     // 縦
+            {1, 1},     // 斜め右下
+            {-1, 1}     // 斜め左下
+        };
+
+        for (int[] d : dirs) {
+            int count = 1; // 自身
+            count += countDirection(row, col, d[0], d[1], color);
+            count += countDirection(row, col, -d[0], -d[1], color);
+            if (count >= 4) return true;
+        }
+        return false;
+    }
+
+    // 指定方向の連続数をカウント
+    private int countDirection(int row, int col, int dx, int dy, int color) {
+        int count = 0;
+        int r = row + dy;
+        int c = col + dx;
+        while (r >= 0 && r < ROWS && c >= 0 && c < COLS && board[r][c] == color) {
+            count++;
+            r += dy;
+            c += dx;
+        }
+        return count;
     }
 
 
