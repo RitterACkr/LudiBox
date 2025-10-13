@@ -18,11 +18,20 @@ public class FourInARowPanel extends GamePanel {
     private static final int MARGIN = 10;
     private static final int CELL_SIZE = 70;
     private static final int ARROW_HEIGHT = 40;
+    private static final int DROP_SPEED = 20;
 
     // -- State --
     // 0: empty, 1: red, 2: yellow
     private final int[][] board = new int[ROWS][COLS];
     private int turn = 1;
+
+    // -- Animation --
+    private boolean isAnimating = false;
+    private int fallingCol = -1;
+    private int fallingRow = -1;
+    private int fallingY;
+    private int fallingPieceColor;
+    private Timer dropTimer;
 
     // -- UI --
     private JPanel boardPanel;
@@ -33,16 +42,18 @@ public class FourInARowPanel extends GamePanel {
     private int hoverCol = -1;
 
 
+
     public FourInARowPanel(ludibox.core.MainWindow m) {
         super(m);
         this.setLayout(new BorderLayout());
         this.setBackground(Color.LIGHT_GRAY);
+        this.setOpaque(true);
 
         // マウス操作
         MouseAdapter mouseAdapter = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                handleClick(e.getX(), e.getY());
+                if (!isAnimating) handleClick(e.getX(), e.getY());
             }
 
             @Override
@@ -69,7 +80,7 @@ public class FourInARowPanel extends GamePanel {
 
         if (y >= arrowTop && y <= arrowTop + ARROW_HEIGHT) {
             int col = (x - x0) / CELL_SIZE;
-            if (col >= 0 && col < COLS) dropPiece(col);
+            if (col >= 0 && col < COLS) startDropAnimation(col);
         }
     }
 
@@ -97,18 +108,51 @@ public class FourInARowPanel extends GamePanel {
         }
     }
 
-    // 駒の落下
-    private void dropPiece(int col) {
+    // コマの落下アニメーション
+    private void startDropAnimation(int col) {
+        int targetRow = -1;
         for (int r = ROWS - 1; r >= 0; r--) {
             if (board[r][col] == 0) {
-                board[r][col] = turn;
-                turn = (turn == 1) ? 2 : 1;
-                repaint();
+                targetRow = r;
                 break;
             }
         }
+
+        if (targetRow == -1) return; // 列が満杯ならスルー
+
+        isAnimating = true;
+        fallingCol = col;
+        fallingRow = targetRow;
+        fallingPieceColor = turn;
+
+        int boardHeight = ROWS * CELL_SIZE;
+        int y0 = getHeight() - boardHeight - 20;
+        fallingY = y0 - CELL_SIZE * 2; // スタート位置
+
+        // タイマー
+        dropTimer = new Timer(12, e -> {
+            fallingY += DROP_SPEED;
+            int destY = y0 + fallingRow * CELL_SIZE + MARGIN;
+            if (fallingY >= destY) {
+                fallingY = destY;
+                finishDrop();
+            }
+            repaint();
+        });
+        dropTimer.start();
     }
 
+    // 落下の完了
+    private void finishDrop() {
+        dropTimer.stop();
+        board[fallingRow][fallingCol] = fallingPieceColor;
+        turn = (turn == 1 ) ? 2 : 1;
+        isAnimating = false;
+        repaint();
+    }
+
+
+    // -- Rendering --
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -138,26 +182,19 @@ public class FourInARowPanel extends GamePanel {
             g2d.fill(triangle);
         }
 
-        // pieces
+        // static pieces
         for (int r = 0; r < ROWS; r++) {
             for (int c = 0; c < COLS; c++) {
                 int piece = board[r][c];
                 if (piece == 0) continue;
-
-                int x = x0 + c * CELL_SIZE + MARGIN;
-                int y = y0 + r * CELL_SIZE + MARGIN;
-                int d = CELL_SIZE - MARGIN * 2;
-
-                Color base = (piece == 1) ? PIECE_RED : PIECE_YELLOW;
-                Color highlight = base.brighter();
-                Color shadow = base.darker();
-
-                GradientPaint gp = new GradientPaint(
-                        x, y, highlight, x, y + d, shadow
-                );
-                g2d.setPaint(gp);
-                g2d.fillOval(x, y, d, d);
+                drawPiece(g2d, piece, x0 + c * CELL_SIZE + MARGIN, y0 + r * CELL_SIZE + MARGIN);
             }
+        }
+
+        // falling piece
+        if (isAnimating) {
+            int x = x0 + fallingCol * CELL_SIZE + MARGIN;
+            drawPiece(g2d, fallingPieceColor, x, fallingY);
         }
 
         // board
@@ -179,5 +216,13 @@ public class FourInARowPanel extends GamePanel {
         g2d.fill(boardArea);
 
         g2d.dispose();
+    }
+
+    private void drawPiece(Graphics2D g2d, int colorType, int x, int y) {
+        int d = CELL_SIZE - MARGIN * 2;
+        Color base = (colorType == 1) ? PIECE_RED : PIECE_YELLOW;
+        GradientPaint gp = new GradientPaint(x, y, base.brighter(), x, y + d, base.darker());
+        g2d.setPaint(gp);
+        g2d.fillOval(x, y, d, d);
     }
 }
