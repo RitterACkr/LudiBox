@@ -1,6 +1,8 @@
 package ludibox.game.fourinarow;
 
 import ludibox.core.GamePanel;
+import ludibox.ui.CustomButton;
+import ludibox.ui.CustomButtonStyle;
 
 import javax.swing.*;
 import java.awt.*;
@@ -39,7 +41,6 @@ public class FourInARowPanel extends GamePanel {
     private Color PIECE_YELLOW = new Color(255, 215, 0);
 
     private int hoverCol = -1;
-
 
 
     public FourInARowPanel(ludibox.core.MainWindow m) {
@@ -151,22 +152,17 @@ public class FourInARowPanel extends GamePanel {
             isFinish = true;
             repaint();
             SwingUtilities.invokeLater(() -> {
-                String color = (turn == 1) ? "Red" : "Yellow";
-                Object[] options = {"Restart", "Exit"};
+                // リザルト画面の表示
+                JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this));
 
-                int choice = JOptionPane.showOptionDialog(
-                        this,
-                        color + " wins!",
-                        "Game Over",
-                        JOptionPane.DEFAULT_OPTION,
-                        JOptionPane.INFORMATION_MESSAGE,
-                        null,
-                        options,
-                        options[0]
-                );
+                dialog.setUndecorated(true);
+                dialog.setBackground(new Color(0, 0, 0, 0));
+                dialog.setModal(true);
+                dialog.getContentPane().add(new ResultPanel(dialog, fallingPieceColor));
+                dialog.pack();
+                dialog.setLocationRelativeTo(null);
 
-                if (choice == 0) resetGame();
-                else if (choice == 1) quit();
+                dialog.setVisible(true);
             });
             return;
         }
@@ -299,5 +295,66 @@ public class FourInARowPanel extends GamePanel {
         GradientPaint gp = new GradientPaint(x, y, base.brighter(), x, y + d, base.darker());
         g2d.setPaint(gp);
         g2d.fillOval(x, y, d, d);
+    }
+
+
+    // -- Result Panel --
+    private class ResultPanel extends JPanel {
+        JDialog dialog;
+
+        public ResultPanel(JDialog dialog, int winner) {
+            this.dialog = dialog;
+
+            this.setPreferredSize(new Dimension(500, 300));
+            this.setOpaque(false);
+
+            this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+
+            // テキスト
+            String color = (winner == 1) ? "Red" : "Yellow";
+            JLabel textLabel = new JLabel(color + " wins!");
+            textLabel.setFont(new Font("Mono", Font.BOLD, 36));
+            textLabel.setForeground(Color.WHITE);
+            textLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            // Restart
+            CustomButton restartButton = new CustomButton("Restart", CustomButtonStyle.SIMPLE);
+            restartButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+            restartButton.addActionListener(e -> {
+                resetGame();
+                dialog.dispose();
+                remove(dialog);
+                revalidate();
+                repaint();
+            });
+
+            // Exit
+            CustomButton exitButton = new CustomButton("Exit", CustomButtonStyle.SIMPLE);
+            exitButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+            exitButton.addActionListener(e -> {
+                quit();
+                dialog.dispose();
+                remove(dialog);
+                revalidate();
+                repaint();
+            });
+
+            this.add(Box.createRigidArea(new Dimension(0, 80)));
+            this.add(textLabel);
+            this.add(Box.createRigidArea(new Dimension(0, 20)));
+            this.add(restartButton);
+            this.add(Box.createRigidArea(new Dimension(0, 20)));
+            this.add(exitButton);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2d = (Graphics2D) g.create();
+            g2d.setColor(new Color(60, 60, 60, 150));
+            g2d.fillRect(0, 0, getWidth(), getHeight());
+            g2d.dispose();
+
+            super.paintComponent(g);
+        }
     }
 }
