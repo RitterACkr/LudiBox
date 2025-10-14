@@ -47,7 +47,7 @@ public class TicTacToeSetupPanel implements GameSetupPanel {
         modePanel.setLayout(new BoxLayout(modePanel, BoxLayout.Y_AXIS));
 
         JLabel title = new JLabel("Tic Tac Toe");
-        title.setFont(new Font("Arial", Font.BOLD, 48));
+        title.setFont(new Font("Arial", Font.BOLD, 24));
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JLabel modeLabel = new JLabel("モードを選択してください");
@@ -94,7 +94,7 @@ public class TicTacToeSetupPanel implements GameSetupPanel {
         levelPanel.setLayout(new BoxLayout(levelPanel, BoxLayout.Y_AXIS));
 
         JLabel title = new JLabel("AIの強さを選択してください");
-        title.setFont(new Font("Mono", Font.BOLD, 36));
+        title.setFont(new Font("Mono", Font.BOLD, 24));
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         String[] options = {"Lv.1 (ランダム)", "Lv.2 (ルールベース)", "Lv.3 (ミニマックス)"};

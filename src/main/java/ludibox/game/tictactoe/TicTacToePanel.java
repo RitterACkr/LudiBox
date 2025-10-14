@@ -154,7 +154,7 @@ public class TicTacToePanel extends GamePanel {
             if (gamemode == GameMode.VS_AI) winner = turn ? "O (YOU)" : "X (AI)";
             else winner = turn ? "O (Player1)" : "X (Player2)";
             // 勝者のテキスト表示
-            infoLabel.setText((turn ? "O" : "X") + " wins!");
+            infoLabel.setText(winner + " wins!");
             // ボタンパネルの表示
             bottomButtonPanel.setVisible(true);
         });
@@ -164,7 +164,6 @@ public class TicTacToePanel extends GamePanel {
 
     /* 引き分け時の終了処理*/
     private void drawGame() {
-        System.out.println("OK");
          isEnd = true;
 
          overlayPanel.setOnAnimationEnd(null);

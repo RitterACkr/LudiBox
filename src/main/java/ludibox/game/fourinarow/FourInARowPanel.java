@@ -9,6 +9,7 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.Area;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.RoundRectangle2D;
+import java.util.Random;
 
 public class FourInARowPanel extends GamePanel {
 
@@ -150,8 +151,22 @@ public class FourInARowPanel extends GamePanel {
             isFinish = true;
             repaint();
             SwingUtilities.invokeLater(() -> {
-                String color = (fallingPieceColor == 1) ? "Red" : "Yellow";
-                JOptionPane.showMessageDialog(this, color + " wins!", "Game Over", JOptionPane.INFORMATION_MESSAGE);
+                String color = (turn == 1) ? "Red" : "Yellow";
+                Object[] options = {"Restart", "Exit"};
+
+                int choice = JOptionPane.showOptionDialog(
+                        this,
+                        color + " wins!",
+                        "Game Over",
+                        JOptionPane.DEFAULT_OPTION,
+                        JOptionPane.INFORMATION_MESSAGE,
+                        null,
+                        options,
+                        options[0]
+                );
+
+                if (choice == 0) resetGame();
+                else if (choice == 1) quit();
             });
             return;
         }
@@ -193,6 +208,22 @@ public class FourInARowPanel extends GamePanel {
             c += dx;
         }
         return count;
+    }
+
+    // ゲームリセット
+    private void resetGame() {
+        for (int r = 0; r < ROWS; r++)
+            for (int c = 0; c < COLS; c++)
+                board[r][c] = 0;
+
+        turn = new Random().nextInt(1, 3);
+        fallingRow = -1; fallingCol = -1;
+        isFinish = false;
+        isAnimating = false;
+
+        this.removeAll();
+        this.revalidate();
+        this.repaint();
     }
 
 
