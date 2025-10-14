@@ -1,6 +1,7 @@
 package ludibox.game.fourinarow;
 
 import ludibox.core.GamePanel;
+import ludibox.math.Vec2;
 import ludibox.ui.CustomButton;
 import ludibox.ui.CustomButtonStyle;
 
@@ -41,6 +42,9 @@ public class FourInARowPanel extends GamePanel {
     private Color PIECE_YELLOW = new Color(255, 215, 0);
 
     private int hoverCol = -1;
+
+    private Vec2 winStart;
+    private Vec2 winEnd;
 
 
     public FourInARowPanel(ludibox.core.MainWindow m) {
@@ -186,24 +190,36 @@ public class FourInARowPanel extends GamePanel {
 
         for (int[] d : dirs) {
             int count = 1; // 自身
-            count += countDirection(row, col, d[0], d[1], color);
-            count += countDirection(row, col, -d[0], -d[1], color);
-            if (count >= 4) return true;
+
+            int[] forward = countDirection(row, col, d[0], d[1], color);
+            int[] backward = countDirection(row, col, -d[0], -d[1], color);
+
+            count += forward[0] + backward[0];
+
+            int startRow = backward[1], startCol = backward[2];
+            int endRow = forward[1], endCol = forward[2];
+
+            if (count >= 4) {
+                winStart = new Vec2(startCol, startRow);
+                winEnd = new Vec2(endCol, endRow);
+                return true;
+            }
         }
         return false;
     }
 
     // 指定方向の連続数をカウント
-    private int countDirection(int row, int col, int dx, int dy, int color) {
+    private int[] countDirection(int row, int col, int dx, int dy, int color) {
         int count = 0;
-        int r = row + dy;
-        int c = col + dx;
+        int r = row;
+        int c = col;
         while (r >= 0 && r < ROWS && c >= 0 && c < COLS && board[r][c] == color) {
-            count++;
             r += dy;
             c += dx;
+            if (r < 0 || r >= ROWS || c < 0 || c >= COLS || board[r][c] != color) break;
+            count++;
         }
-        return count;
+        return new int[] {count, r - dy, c - dx};
     }
 
     // ゲームリセット
@@ -216,6 +232,8 @@ public class FourInARowPanel extends GamePanel {
         fallingRow = -1; fallingCol = -1;
         isFinish = false;
         isAnimating = false;
+        winStart = null;
+        winEnd = null;
 
         this.removeAll();
         this.revalidate();
@@ -285,6 +303,19 @@ public class FourInARowPanel extends GamePanel {
         // fill
         g2d.setColor(new Color(60, 60, 60));
         g2d.fill(boardArea);
+
+
+        // Winner's line
+        if (winStart != null && winEnd != null) {
+            int sx = (int) (x0 + winStart.x * CELL_SIZE + (double) CELL_SIZE / 2);
+            int sy = (int) (y0 + winStart.y * CELL_SIZE + (double) CELL_SIZE / 2);
+            int ex = (int) (x0 + winEnd.x * CELL_SIZE + (double) CELL_SIZE / 2);
+            int ey = (int) (y0 + winEnd.y * CELL_SIZE + (double) CELL_SIZE / 2);
+
+            g2d.setStroke(new BasicStroke(6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g2d.setColor(Color.WHITE);
+            g2d.drawLine(sx, sy, ex, ey);
+        }
 
         g2d.dispose();
     }
