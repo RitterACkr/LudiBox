@@ -5,6 +5,7 @@ import ludibox.math.Vec2;
 import ludibox.ui.CustomButton;
 import ludibox.ui.CustomButtonStyle;
 
+import javax.print.attribute.standard.RequestingUserName;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -155,19 +156,15 @@ public class FourInARowPanel extends GamePanel {
         if (checkWin(fallingRow, fallingCol)) {
             isFinish = true;
             repaint();
-            SwingUtilities.invokeLater(() -> {
-                // リザルト画面の表示
-                JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this));
+            showResultDialog(fallingPieceColor);
+            return;
+        }
 
-                dialog.setUndecorated(true);
-                dialog.setBackground(new Color(0, 0, 0, 0));
-                dialog.setModal(true);
-                dialog.getContentPane().add(new ResultPanel(dialog, fallingPieceColor));
-                dialog.pack();
-                dialog.setLocationRelativeTo(null);
-
-                dialog.setVisible(true);
-            });
+        // 引き分けチェック
+        if (isBoardFull()) {
+            isFinish = true;
+            repaint();
+            showResultDialog(0);
             return;
         }
 
@@ -206,6 +203,13 @@ public class FourInARowPanel extends GamePanel {
             }
         }
         return false;
+    }
+
+    // 盤面が埋まっているかの判定
+    private boolean isBoardFull() {
+        for (int c = 0; c < COLS; c++)
+            if (board[0][c] == 0) return false;
+        return true;
     }
 
     // 指定方向の連続数をカウント
@@ -328,6 +332,20 @@ public class FourInARowPanel extends GamePanel {
         g2d.fillOval(x, y, d, d);
     }
 
+    private void showResultDialog(int winner) {
+        SwingUtilities.invokeLater(() -> {
+            JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this));
+
+            dialog.setUndecorated(true);
+            dialog.setBackground(new Color(0, 0, 0, 0));
+            dialog.setModal(true);
+            dialog.getContentPane().add(new ResultPanel(dialog, winner));
+            dialog.pack();
+            dialog.setLocationRelativeTo(window);
+            dialog.setVisible(true);
+        });
+    }
+
 
     // -- Result Panel --
     private class ResultPanel extends JPanel {
@@ -342,8 +360,10 @@ public class FourInARowPanel extends GamePanel {
             this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
             // テキスト
-            String color = (winner == 1) ? "Red" : "Yellow";
-            JLabel textLabel = new JLabel(color + " wins!");
+            String text;
+            if (winner == 0) text = "It's a draw!";
+            else text = (winner == 1) ? "Red wins!" : "Yellow wins!";
+            JLabel textLabel = new JLabel(text);
             textLabel.setFont(new Font("Mono", Font.BOLD, 36));
             textLabel.setForeground(Color.WHITE);
             textLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
