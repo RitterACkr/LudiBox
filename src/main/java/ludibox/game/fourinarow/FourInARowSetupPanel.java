@@ -4,8 +4,11 @@ import ludibox.core.GameSetupPanel;
 import ludibox.core.MiniGame;
 
 import javax.swing.*;
+import java.awt.*;
 
 public class FourInARowSetupPanel implements GameSetupPanel {
+
+    private JPanel panel;
 
     // Layout
     private JRadioButton twoPlayerRadio;
@@ -14,6 +17,11 @@ public class FourInARowSetupPanel implements GameSetupPanel {
 
     private Runnable onStart;
     private Runnable onCancel;
+
+    public FourInARowSetupPanel() {
+        panel = new JPanel(new GridBagLayout());
+
+    }
 
 
     @Override
@@ -28,11 +36,11 @@ public class FourInARowSetupPanel implements GameSetupPanel {
 
     @Override
     public JPanel getPanel() {
-        return null;
+        return panel;
     }
 
     @Override
     public MiniGame getGame() {
-        return null;
+        return MiniGame.FOUR_IN_A_ROW;
     }
 }
