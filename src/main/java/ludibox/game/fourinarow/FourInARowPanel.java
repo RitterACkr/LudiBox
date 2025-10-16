@@ -195,6 +195,7 @@ public class FourInARowPanel extends GamePanel {
 
         // AIターン
         if (gameMode == GameMode.VS_AI && turn == 2 && !isFinish) {
+            isAnimating = true;
             SwingUtilities.invokeLater(this::makeAiMove);
         }
     }
