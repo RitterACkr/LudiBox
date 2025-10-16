@@ -13,7 +13,6 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.Area;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.RoundRectangle2D;
-import java.nio.channels.NetworkChannel;
 import java.util.Comparator;
 import java.util.List;
 import java.util.ArrayList;
@@ -34,7 +33,7 @@ public class FourInARowPanel extends GamePanel {
     private final int[][] board = new int[ROWS][COLS];
     private int turn = 1;
     private boolean isFinish = false;
-    private enum GameMode { VS_AI, TWO_PLAYER };
+    private enum GameMode { VS_AI, TWO_PLAYER }
     private GameMode gameMode;
 
     // -- Animation --
@@ -196,7 +195,7 @@ public class FourInARowPanel extends GamePanel {
 
         // AIターン
         if (gameMode == GameMode.VS_AI && turn == 2 && !isFinish) {
-            SwingUtilities.invokeLater(() -> makeAiMove());
+            SwingUtilities.invokeLater(this::makeAiMove);
         }
     }
 
@@ -273,7 +272,7 @@ public class FourInARowPanel extends GamePanel {
         this.repaint();
 
         if (gameMode == GameMode.VS_AI && turn == 2) {
-            SwingUtilities.invokeLater(() -> makeAiMove());
+            SwingUtilities.invokeLater(this::makeAiMove);
         }
     }
 
@@ -288,8 +287,7 @@ public class FourInARowPanel extends GamePanel {
         int col = switch (aiLevel) {
             case EASY -> aiRandom(available);
             case NORMAL -> aiNormal(available);
-            case HARD -> aiRandom(available);
-            default -> aiRandom(available);
+            case HARD -> aiHard(available);
         };
 
         new Timer(500, e -> {
@@ -347,6 +345,10 @@ public class FourInARowPanel extends GamePanel {
     }
 
     // LEVEL: 3
+    // AIが勝てる : + 1000
+    // 相手が勝つ : - 800
+    // 3つ並ぶ : +50
+    // 2つ並ぶ : +10
     private int aiHard(List<Integer> available) {
         int bestCol = available.get(0);
         int bestScore = Integer.MIN_VALUE;
@@ -358,12 +360,12 @@ public class FourInARowPanel extends GamePanel {
             board[row][col] = 2;
 
             if (checkWin(row, col, true)) {
-                board[row][col] = 2;
+                board[row][col] = 0;
                 return col;
             }
 
             // 相手の動きも考慮したスコア計算
-            int score = evaluateBoard(2) - evaluateOpponentThreats();
+            int score = evaluateBoard(2) - evaluateOpponent();
 
             board[row][col] = 0;
 
@@ -393,10 +395,46 @@ public class FourInARowPanel extends GamePanel {
             for (int c = 0; c < COLS; c++) {
                 if (board[r][c] != color) continue;
 
-                score += countPotential(r, c, 1, 0, color);
-                score += count
+                score += countPotential(r, c, 1, 0, color);  // 横
+                score += countPotential(r, c, 0, 1, color);  // 縦
+                score += countPotential(r, c, 1, 1, color);  // 斜め右下
+                score += countPotential(r, c, -1, 1, color); // 斜め左下
             }
         }
+        return score;
+    }
+
+    // 相手が次に勝てる位置ならペナルティ
+    private int evaluateOpponent() {
+        int penalty = 0;
+        for (int c = 0; c < COLS; c++) {
+            int r = getAvailableRow(c);
+            if (r != -1) {
+                board[r][c] = 1;
+                if (checkWin(r, c, true)) penalty += 800;
+                board[r][c] = 0;
+            }
+        }
+        return penalty;
+    }
+
+    // 部分的な連続数をカウント & スコア化
+    private int countPotential(int row, int col, int dx, int dy, int color) {
+        int count = 0;
+        for (int i = 1; i < 4; i++) {
+            int r = row + i * dy;
+            int c = col + i * dx;
+            if (r < 0 || r >= ROWS || c < 0 || c >= COLS) break;
+            if (board[r][c] == color) count++;
+            else if (board[r][c] != 0) break;
+        }
+
+        return switch (count) {
+            case 3 -> 80;
+            case 2 -> 20;
+            case 1 -> 5;
+            default -> 0;
+        };
     }
 
     // -- Rendering --
