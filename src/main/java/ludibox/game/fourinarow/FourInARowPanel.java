@@ -44,6 +44,11 @@ public class FourInARowPanel extends GamePanel {
     private Timer dropTimer;
 
     // -- UI --
+    private JPanel sidePanel;
+    private Indicator redIndicator;
+    private Indicator yellowIndicator;
+    private JLabel turnLabel;
+
     private Color PIECE_RED = new Color(220, 20, 60);
     private Color PIECE_YELLOW = new Color(255, 215, 0);
 
@@ -54,7 +59,11 @@ public class FourInARowPanel extends GamePanel {
 
     // AIレベル
     private enum AILevel {
-        EASY, NORMAL, HARD
+        EASY("Easy"), NORMAL("Normal"), HARD("Hard");
+        private final String label;
+        AILevel(String label) { this.label = label; }
+        @Override
+        public String toString() { return label; }
     }
     private AILevel aiLevel;
 
@@ -65,6 +74,10 @@ public class FourInARowPanel extends GamePanel {
             case 1 -> aiLevel = AILevel.NORMAL;
             case 2 -> aiLevel = AILevel.HARD;
         }
+
+        sidePanel = createSidePanel();
+        updateTurnLabel();
+        this.add(sidePanel, BorderLayout.EAST);
     }
     public FourInARowPanel(MainWindow m, boolean mode) {
         super(m);
@@ -190,6 +203,7 @@ public class FourInARowPanel extends GamePanel {
         }
 
         turn = (turn == 1 ) ? 2 : 1;
+        updateTurnLabel();
         isAnimating = false;
         repaint();
 
@@ -271,6 +285,10 @@ public class FourInARowPanel extends GamePanel {
         this.removeAll();
         this.revalidate();
         this.repaint();
+
+        sidePanel = createSidePanel();
+        updateTurnLabel();
+        this.add(sidePanel, BorderLayout.EAST);
 
         if (gameMode == GameMode.VS_AI && turn == 2) {
             SwingUtilities.invokeLater(this::makeAiMove);
@@ -540,6 +558,58 @@ public class FourInARowPanel extends GamePanel {
     }
 
 
+    // 右側のUIパネルを生成
+    private JPanel createSidePanel() {
+        JPanel side = new JPanel();
+        side.setLayout(new BoxLayout(side, BoxLayout.Y_AXIS));
+        side.setPreferredSize(new Dimension(150, 0));
+        side.setBackground(Color.LIGHT_GRAY);
+
+        side.add(Box.createVerticalStrut(40));
+
+        // タイトル
+        JLabel title = new JLabel("Four in a Row");
+        title.setFont(new Font("SansSerif", Font.BOLD, 20));
+        title.setAlignmentX(Component.CENTER_ALIGNMENT);
+        side.add(title);
+
+        side.add(Box.createVerticalStrut(20));
+
+        // AIレベル
+        JLabel aiLabel = new JLabel();
+        if (gameMode == GameMode.VS_AI) {
+            aiLabel.setText("AI: " + aiLevel.toString());
+            aiLabel.setFont(new Font("SansSerif", Font.PLAIN, 16));
+            aiLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            side.add(aiLabel);
+            side.add(Box.createVerticalStrut(20));
+        }
+
+        // ターン
+        turnLabel = new JLabel();
+        turnLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
+        turnLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        updateTurnLabel();
+        side.add(turnLabel);
+
+        // Red
+        String redText = (gameMode == GameMode.VS_AI) ? "Player" : "Player 1";
+        redIndicator = new Indicator(redText, PIECE_RED);
+        redIndicator.setAlignmentX(Component.CENTER_ALIGNMENT);
+        side.add(redIndicator);
+
+        // Yellow
+        String yellowText = (gameMode == GameMode.VS_AI) ? "AI" : "Player 2";
+        yellowIndicator = new Indicator(yellowText, PIECE_YELLOW);
+        yellowIndicator.setAlignmentX(Component.CENTER_ALIGNMENT);
+        side.add(yellowIndicator);
+
+        side.add(Box.createVerticalGlue());
+
+        return side;
+    }
+
+
     // -- Result Panel --
     private class ResultPanel extends JPanel {
         JDialog dialog;
@@ -599,6 +669,78 @@ public class FourInARowPanel extends GamePanel {
             g2d.dispose();
 
             super.paintComponent(g);
+        }
+    }
+
+
+    // -- Player Icon --
+    private class Indicator extends JPanel {
+        private final String name;
+        private final Color color;
+        private boolean active = false;
+
+        public Indicator(String name, Color color) {
+            this.name = name;
+            this.color = color;
+            this.setOpaque(false);
+            this.setPreferredSize(new Dimension(150, 50));
+        }
+
+        public void setActive(boolean active) {
+            this.active = active;
+            repaint();
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2d = (Graphics2D) g.create();
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int x = 15;
+            int d = active ? 36: 28;
+            int y = (getHeight() - d) / 2;
+
+            // Highlight
+            if (active) {
+                g2d.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 100));
+                g2d.fillOval(x - 5, y - 5, d + 10, d + 10);
+            }
+
+            // Piece
+            g2d.setColor(color);
+            g2d.fillOval(x, y, d, d);
+
+            // Frame
+            if (active) {
+                g2d.setStroke(new BasicStroke(2f));
+                g2d.setColor(Color.WHITE);
+                g2d.drawOval(x, y, d, d);
+            }
+
+            // Name
+            g2d.setFont(new Font("SansSerif", Font.BOLD, 15));
+            g2d.setColor(Color.DARK_GRAY);
+            g2d.drawString(name, x + d + 15, y + d - 10);
+
+            g2d.dispose();
+        }
+    }
+
+    // ターン表示変更
+    private void updateTurnLabel() {
+        if (isFinish) {
+            turnLabel.setText("Game Over");
+            turnLabel.setForeground(Color.GRAY);
+        } else {
+            String colorText = (turn == 1) ? "Red's Turn" : "Yellow's Turn";
+            turnLabel.setText(colorText);
+            turnLabel.setForeground(Color.DARK_GRAY);
+        }
+
+        if (redIndicator != null && yellowIndicator != null) {
+            redIndicator.setActive(turn == 1 && !isFinish);
+            yellowIndicator.setActive(turn == 2 && !isFinish);
         }
     }
 }
