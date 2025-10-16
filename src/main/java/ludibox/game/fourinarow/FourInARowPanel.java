@@ -1,11 +1,11 @@
 package ludibox.game.fourinarow;
 
 import ludibox.core.GamePanel;
+import ludibox.core.MainWindow;
 import ludibox.math.Vec2;
 import ludibox.ui.CustomButton;
 import ludibox.ui.CustomButtonStyle;
 
-import javax.print.attribute.standard.RequestingUserName;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -13,6 +13,10 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.Area;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.RoundRectangle2D;
+import java.nio.channels.NetworkChannel;
+import java.util.Comparator;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Random;
 
 public class FourInARowPanel extends GamePanel {
@@ -30,6 +34,8 @@ public class FourInARowPanel extends GamePanel {
     private final int[][] board = new int[ROWS][COLS];
     private int turn = 1;
     private boolean isFinish = false;
+    private enum GameMode { VS_AI, TWO_PLAYER };
+    private GameMode gameMode;
 
     // -- Animation --
     private boolean isAnimating = false;
@@ -47,9 +53,23 @@ public class FourInARowPanel extends GamePanel {
     private Vec2 winStart;
     private Vec2 winEnd;
 
+    // AIレベル
+    private enum AILevel {
+        EASY, NORMAL, HARD
+    }
+    private AILevel aiLevel;
 
-    public FourInARowPanel(ludibox.core.MainWindow m) {
+    public FourInARowPanel(MainWindow m, boolean mode, int level) {
+        this(m, mode);
+        switch (level) {
+            case 0 -> aiLevel = AILevel.EASY;
+            case 1 -> aiLevel = AILevel.NORMAL;
+            case 2 -> aiLevel = AILevel.HARD;
+        }
+    }
+    public FourInARowPanel(MainWindow m, boolean mode) {
         super(m);
+        this.gameMode = (mode) ? GameMode.VS_AI : GameMode.TWO_PLAYER;
         this.setLayout(new BorderLayout());
         this.setBackground(Color.LIGHT_GRAY);
         this.setOpaque(true);
@@ -58,7 +78,9 @@ public class FourInARowPanel extends GamePanel {
         MouseAdapter mouseAdapter = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                if (!isAnimating && !isFinish) handleClick(e.getX(), e.getY());
+                if (!isAnimating && !isFinish)
+                    if (gameMode == GameMode.TWO_PLAYER || turn == 1)
+                        handleClick(e.getX(), e.getY());
             }
 
             @Override
@@ -147,13 +169,13 @@ public class FourInARowPanel extends GamePanel {
         dropTimer.start();
     }
 
-    // 落下の完了 & 勝敗判定
+    // 落下の完了 & 勝敗判定 & AIターンに移行するか判定
     private void finishDrop() {
         dropTimer.stop();
         board[fallingRow][fallingCol] = fallingPieceColor;
 
         // 勝敗チェック
-        if (checkWin(fallingRow, fallingCol)) {
+        if (checkWin(fallingRow, fallingCol, false)) {
             isFinish = true;
             repaint();
             showResultDialog(fallingPieceColor);
@@ -171,10 +193,15 @@ public class FourInARowPanel extends GamePanel {
         turn = (turn == 1 ) ? 2 : 1;
         isAnimating = false;
         repaint();
+
+        // AIターン
+        if (gameMode == GameMode.VS_AI && turn == 2 && !isFinish) {
+            SwingUtilities.invokeLater(() -> makeAiMove());
+        }
     }
 
     // 勝敗判定
-    private boolean checkWin(int row, int col) {
+    private boolean checkWin(int row, int col, boolean simulate) {
         int color = board[row][col];
         if (color == 0) return false;
 
@@ -197,8 +224,10 @@ public class FourInARowPanel extends GamePanel {
             int endRow = forward[1], endCol = forward[2];
 
             if (count >= 4) {
-                winStart = new Vec2(startCol, startRow);
-                winEnd = new Vec2(endCol, endRow);
+                if (!simulate) {
+                    winStart = new Vec2(startCol, startRow);
+                    winEnd = new Vec2(endCol, endRow);
+                }
                 return true;
             }
         }
@@ -242,8 +271,133 @@ public class FourInARowPanel extends GamePanel {
         this.removeAll();
         this.revalidate();
         this.repaint();
+
+        if (gameMode == GameMode.VS_AI && turn == 2) {
+            SwingUtilities.invokeLater(() -> makeAiMove());
+        }
     }
 
+    // AIの手を決める
+    private void makeAiMove() {
+        List<Integer> available = new ArrayList<>();
+        for (int c = 0; c < COLS; c++)
+            if (board[0][c] == 0) available.add(c);
+
+        if (available.isEmpty()) return;
+
+        int col = switch (aiLevel) {
+            case EASY -> aiRandom(available);
+            case NORMAL -> aiNormal(available);
+            case HARD -> aiRandom(available);
+            default -> aiRandom(available);
+        };
+
+        new Timer(500, e -> {
+            ((Timer) e.getSource()).stop();
+            startDropAnimation(col);
+        }).start();
+    }
+
+    // LEVEL: 1
+    private int aiRandom(List<Integer> available) {
+        // 1. 勝てる列があるなら勝つ
+        for (int col : available) {
+            int row = getAvailableRow(col);
+            if (row != -1) {
+                board[row][col] = 2;
+                boolean win = checkWin(row, col, true);
+                board[row][col] = 0;
+                if (win) return col;
+            }
+        }
+
+        // 2. 特にないならランダム
+        return available.get(new Random().nextInt(available.size()));
+    }
+
+    // LEVEL: 2
+    private int aiNormal(List<Integer> available) {
+        // 1. 勝てる手を探す
+        for (int col : available) {
+            int row = getAvailableRow(col);
+            if (row != -1) {
+                board[row][col] = 2;
+                boolean win = checkWin(row, col, true);
+                board[row][col] = 0;
+                if (win) return col;
+            }
+        }
+
+        // 2. 相手が次に勝てるならブロック
+        for (int col : available) {
+            int row = getAvailableRow(col);
+            if (row != -1) {
+                board[row][col] = 1;
+                boolean eWin = checkWin(row, col, true);
+                board[row][col] = 0;
+                if (eWin) return col;
+            }
+        }
+
+        // 3. ランダムで選択
+        int center = COLS / 2;
+        available.sort(Comparator.comparingInt(a -> Math.abs(a - center)));
+        if (Math.random() < 0.6) return available.get(0); // 60%
+        else return available.get(new Random().nextInt(available.size())); // 40%
+    }
+
+    // LEVEL: 3
+    private int aiHard(List<Integer> available) {
+        int bestCol = available.get(0);
+        int bestScore = Integer.MIN_VALUE;
+
+        for (int col : available) {
+            int row = getAvailableRow(col);
+            if (row == -1) continue;
+
+            board[row][col] = 2;
+
+            if (checkWin(row, col, true)) {
+                board[row][col] = 2;
+                return col;
+            }
+
+            // 相手の動きも考慮したスコア計算
+            int score = evaluateBoard(2) - evaluateOpponentThreats();
+
+            board[row][col] = 0;
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestCol = col;
+            }
+        }
+
+        return bestCol;
+    }
+
+    // 指定した列の置ける行を取得
+    private int getAvailableRow(int col) {
+        for (int r = ROWS - 1; r >= 0; r--) {
+            if (board[r][col] == 0) return r;
+        }
+        return -1;
+    }
+
+    // 盤面のスコア化
+    private int evaluateBoard(int color) {
+        int score = 0;
+        int opponent = (color == 1) ? 2 : 1;
+
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
+                if (board[r][c] != color) continue;
+
+                score += countPotential(r, c, 1, 0, color);
+                score += count
+            }
+        }
+    }
 
     // -- Rendering --
     @Override
