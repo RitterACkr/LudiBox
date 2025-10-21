@@ -2,6 +2,7 @@ package ludibox.core;
 
 import ludibox.game.fourinarow.FourInARowPanel;
 import ludibox.game.fourinarow.FourInARowSetupPanel;
+import ludibox.game.simonsays.SimonSaysPanel;
 import ludibox.game.snakegame.SnakeGamePanel;
 import ludibox.game.tictactoe.TicTacToePanel;
 import ludibox.game.tictactoe.TicTacToeSetupPanel;
@@ -23,6 +24,7 @@ public class GameFactory {
                 boolean isVsAi = ((FourInARowSetupPanel) setup).isVsAI();
                 yield new FourInARowPanel(window, isVsAi, level);
             }
+            case SIMON_SAYS -> new SimonSaysPanel(window);
         };
     }
 
@@ -32,6 +34,7 @@ public class GameFactory {
             case SNAKE_GAME -> null;
             case YAHTZEE -> null;
             case FOUR_IN_A_ROW -> new FourInARowSetupPanel();
+            case SIMON_SAYS -> null;
         };
     }
 }
