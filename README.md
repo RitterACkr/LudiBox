@@ -5,3 +5,4 @@
 1. Tic Tac Toe
 2. Snake Game
 3. Yahtzee
+4. Four in a Row
