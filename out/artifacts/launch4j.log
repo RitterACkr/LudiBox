@@ -1,0 +1,20 @@
+
+
+Version:	3.50
+CmdLine:	C:\Users\naito\IdeaProjects\LudiBox\out\artifacts\LudiBox.exe --l4j-debug
+JNI:		No
+WOW64:		Yes
+Working dir:	C:\Users\naito\IdeaProjects\LudiBox\out\artifacts\.
+Requires JDK:	No
+Requires 64-Bit: No
+Java min ver:	
+Java max ver:	
+Substitute:	JAVA_HOME = C:\Program Files\Java\jdk-18.0.2
+Substitute:	PATH = C:\Program Files\Common Files\Oracle\Java\javapath;C:\Program Files (x86)\Razer Chroma SDK\bin;C:\Program Files\Razer Chroma SDK\bin;C:\Program Files (x86)\Razer\ChromaBroadcast\bin;C:\Program Files\Razer\ChromaBroadcast\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Windows\system32\config\systemprofile\AppData\Local\Microsoft\WindowsApps;C:\Program Files\Java\jdk-18.0.2\bin;C:\free\jackson-annotations-2.13.3.jar;C:\free\jackson-databind-2.13.3.jar;C:\free\jackson-core-2.13.3.jar;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;D:\Program Files\Git\cmd;C:\Program Files\Apache Software Foundation\Tomcat 10.1bin;C:\Program Files\Java\javafx-sdk-20.0.2\lib;;C:\Program Files\Git LFS;C:\Program Files\NVIDIA Corporation\NVIDIA app\NvDLISR;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Users\naito\AppData\Local\Microsoft\WindowsApps;C:\Users\naito\AppData\Local\Microsoft\WindowsApps;;C:\Program Files\Java\jdk-18.0.2\bin
+JRE paths:	C:\Program Files\Java\jdk-18.0.2;C:\Program Files\Common Files\Oracle\Java\javapath;C:\Program Files (x86)\Razer Chroma SDK\bin;C:\Program Files\Razer Chroma SDK\bin;C:\Program Files (x86)\Razer\ChromaBroadcast\bin;C:\Program Files\Razer\ChromaBroadcast\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Windows\system32\config\systemprofile\AppData\Local\Microsoft\WindowsApps;C:\Program Files\Java\jdk-18.0.2\bin;C:\free\jackson-annotations-2.13.3.jar;C:\free\jackson-databind-2.13.3.jar;C:\free\jackson-core-2.13.3.jar;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;D:\Program Files\Git\cmd;C:\Program Files\Apache Software Foundation\Tomcat 10.1bin;C:\Program Files\Java\javafx-sdk-20.0.2\lib;;C:\Program Files\Git LFS;C:\Program Files\NVIDIA Corporation\NVIDIA app\NvDLISR;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Users\naito\AppData\Local\Microsoft\WindowsApps;C:\Users\naito\AppData\Local\Microsoft\WindowsApps;;C:\Program Files\Java\jdk-18.0.2\bin
+Check launcher:	C:\Program Files\Java\jdk-18.0.2\bin\javaw.exe (OK)
+Version string: 1.018.000_002 / 64-Bit (OK)
+Launcher:	C:\Program Files\Java\jdk-18.0.2\bin\javaw.exe
+Launcher args:	-jar "C:\Users\naito\IdeaProjects\LudiBox\out\artifacts\LudiBox.exe"
+Args length:	68/32768 chars
+Exit code:	0
